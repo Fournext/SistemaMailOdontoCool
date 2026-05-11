@@ -12,26 +12,28 @@ public class HelpService {
 
     public void sendHelp(String to) {
         String message = "========================================\n"
-                + "AYUDA - SISTEMA DE CORREO ODONTOCOOL\n"
+                + "AYUDA - SISTEMA ODONTOCOOL (CORREO)\n"
                 + "========================================\n\n"
-                + "FORMATO DE COMANDO:\n"
+                + "FORMATO GENERAL:\n"
                 + "  COMANDO[\"param1\", \"param2\", ...]\n\n"
-                + "COMANDOS DISPONIBLES:\n\n"
-                + "1. GESTIÓN DE PERSONAS (PER):\n"
-                + "   - INSPER[\"CI\", \"Nombre\", \"Apellido\", \"Profesión\", \"Telf\", \"Cel\", \"Email\"]\n"
-                + "     Ejemplo: INSPER[\"123\", \"Juan\", \"Perez\", \"Doc\", \"333\", \"777\", \"j@m.com\"]\n\n"
-                + "   - LISPER[\"*\"] -> Lista todas las personas.\n"
-                + "   - LISPER[\"CI\"] -> Muestra una persona específica por CI.\n\n"
-                + "2. AYUDA:\n"
-                + "   - HELP -> Recibir este mensaje de ayuda.\n\n"
+                + "1. DOCTORES (DOC):\n"
+                + "   - INSDOC[\"CI\", \"Nombres\", \"Apellidos\", \"Direccion\", \"Genero\", \"Telf\", \"FechaNacimiento\", \"CodDoc\", \"Exp\", \"Matrícula\"]\n"
+                + "   - LISDOC[] -> Listar doctores.\n\n"
+                + "2. PACIENTES (PAC):\n"
+                + "   - INSPAC[\"CI\", \"Nombres\", \"Apellidos\", \"Direccion\", \"Genero\", \"Telf\", \"FechaNacimiento\", \"CodPac\", \"ContactoEmerg\", \"TelfEmerg\"]\n"
+                + "   - LISPAC[] -> Listar pacientes.\n\n"
+                + "3. SECRETARIAS (SEC):\n"
+                + "   - INSSEC[\"CI\", \"Nombres\", \"Apellidos\", \"Direccion\", \"Genero\", \"Telf\", \"FechaNacimiento\", \"CodSec\", \"FechaContratacion\"]\n"
+                + "   - LISSEC[] -> Listar secretarias.\n\n"
+                + "4. PROPIETARIOS (PRO):\n"
+                + "   - INSPRO[\"CI\", \"Nombres\", \"Apellidos\", \"Direccion\", \"Genero\", \"Telf\", \"FechaNacimiento\", \"FechaInicio\", \"Porcentaje\"]\n"
+                + "   - LISPRO[] -> Listar propietarios.\n\n"
                 + "========================================\n"
-                + "NOTAS:\n"
-                + "  - Los parámetros deben ir entre comillas dobles y separados por coma.\n"
-                + "  - El comando debe ir en el ASUNTO del correo.\n"
+                + "NOTA: Las fechas deben ir en formato AAAA-MM-DD (Ej: 1995-05-15).\n"
                 + "========================================\n";
 
         try {
-            smtpService.sendEmail(to, "Guía de Comandos - OdontoCool", message);
+            smtpService.sendEmail(to, "Manual de Comandos - OdontoCool", message);
         } catch (IOException e) {
             System.err.println("Error al enviar ayuda: " + e.getMessage());
         }

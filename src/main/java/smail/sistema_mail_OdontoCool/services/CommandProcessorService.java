@@ -13,56 +13,77 @@ import java.util.regex.Pattern;
 public class CommandProcessorService {
 
     @Autowired
-    private PersonaService personaService;
+    private DoctorService doctorService;
 
     @Autowired
-    private SmtpClientService smtpService;
+    private PacienteService pacienteService;
+
+    @Autowired
+    private SecretariaService secretariaService;
+
+    @Autowired
+    private PropietarioService propietarioService;
 
     @Autowired
     private HelpService helpService;
 
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("^([A-Z]+)(?:\\[(.*)\\])?$");
+    @Autowired
+    private SmtpClientService smtpService;
+
+    // Regex mejorada: permite espacios entre el comando y los corchetes
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^\\s*([A-Z]+)\\s*(?:\\[\\s*(.*)\\s*\\])?\\s*$",
+            Pattern.CASE_INSENSITIVE);
 
     public void process(String subject, String fromEmail) {
+        String cleanSubject = subject.trim();
+
         try {
-            Matcher matcher = COMMAND_PATTERN.matcher(subject.trim());
+            Matcher matcher = COMMAND_PATTERN.matcher(cleanSubject);
 
             if (matcher.matches()) {
-                String fullCommand = matcher.group(1);
+                String fullCommand = matcher.group(1).toUpperCase();
                 String paramsRaw = (matcher.group(2) != null) ? matcher.group(2) : "";
                 List<String> params = parseParams(paramsRaw);
 
                 routeToEntityService(fullCommand, params, fromEmail);
             } else {
                 sendResponse(fromEmail, "Error de Formato",
-                        "El formato del asunto es inválido. Recibido: [" + subject + "]\n" +
-                                "Formato esperado: COMANDO[\"param1\", \"param2\"]");
+                        "El formato del asunto es inválido.\n" +
+                                "Recibido: [" + cleanSubject + "]\n" +
+                                "Asegúrate de que no tenga prefijos como 'Re:' o 'Fwd:'");
             }
         } catch (Exception e) {
-            sendResponse(fromEmail, "Error Crítico", "Error al procesar el mensaje: " + e.getMessage());
+            sendResponse(fromEmail, "Error Crítico", "Error al procesar: " + e.getMessage());
         }
     }
 
     private void routeToEntityService(String fullCommand, List<String> params, String fromEmail) {
-        if (fullCommand.length() < 3) {
-            sendResponse(fromEmail, "Error", "Comando no reconocido.");
-            return;
-        }
-
-        // Preguntar si es un comando especial
         if (fullCommand.equals("HELP")) {
             helpService.sendHelp(fromEmail);
             return;
         }
 
+        if (fullCommand.length() < 3) {
+            sendResponse(fromEmail, "Error", "Comando demasiado corto.");
+            return;
+        }
+
         String action = fullCommand.substring(0, 3); // INS, LIS, MOD, DEL
-        String entity = fullCommand.substring(3); // PER, SRV, CTA
+        String entity = fullCommand.substring(3); // DOC, PAC, SEC, PRO
 
         switch (entity) {
-            case "PER":
-                personaService.handle(action, params, fromEmail);
+            case "DOC":
+                doctorService.handle(action, params, fromEmail);
                 break;
-            // case "SRV": srvService.handle(action, params, fromEmail); break;
+            case "PAC":
+                pacienteService.handle(action, params, fromEmail);
+                break;
+            case "SEC":
+                secretariaService.handle(action, params, fromEmail);
+                break;
+            case "PRO":
+                propietarioService.handle(action, params, fromEmail);
+                break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);
         }
@@ -70,11 +91,14 @@ public class CommandProcessorService {
 
     private List<String> parseParams(String paramsRaw) {
         List<String> params = new ArrayList<>();
-        if (paramsRaw.isEmpty())
+        if (paramsRaw.trim().isEmpty())
             return params;
-        String[] split = paramsRaw.split("\",\"");
-        for (String s : split)
+
+        // Split por coma rodeada de comillas, permitiendo espacios
+        String[] split = paramsRaw.split("\",\\s*\"");
+        for (String s : split) {
             params.add(s.replace("\"", "").trim());
+        }
         return params;
     }
 
