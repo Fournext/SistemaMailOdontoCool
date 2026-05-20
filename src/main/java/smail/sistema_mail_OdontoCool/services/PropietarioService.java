@@ -27,16 +27,22 @@ public class PropietarioService {
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
-            case "INS": insert(params, fromEmail); break;
-            case "LIS": list(fromEmail); break;
-            default: sendResponse(fromEmail, "Error", "Acción no soportada para Propietarios.");
+            case "INS":
+                insert(params, fromEmail);
+                break;
+            case "LIS":
+                list(fromEmail);
+                break;
+            default:
+                sendResponse(fromEmail, "Error", "Acción no soportada para Propietarios.");
         }
     }
 
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
-            // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5], FNac[6], FInicio[7], Porcentaje[8]
+            // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
+            // FNac[6], FInicio[7], Porcentaje[8]
             if (params.size() < 9) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para Propietario. Se requieren 9.");
                 return;

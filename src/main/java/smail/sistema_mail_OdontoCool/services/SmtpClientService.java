@@ -60,11 +60,14 @@ public class SmtpClientService {
             sendCommand(writer, reader, "RCPT TO:<" + to + ">", "250");
             sendCommand(writer, reader, "DATA", "354");
 
-            writer.println("From: " + user);
-            writer.println("To: " + to);
-            writer.println("Subject: " + subject);
-            writer.println("");
-            writer.println(body);
+            writer.print("From: " + user + "\r\n");
+            writer.print("To: " + to + "\r\n");
+            writer.print("Subject: " + subject + "\r\n");
+            writer.print("\r\n");
+            
+            String safeBody = body.replace("\r\n", "\n").replace("\n", "\r\n");
+            writer.print(safeBody + "\r\n");
+            writer.flush();
 
             sendCommand(writer, reader, ".", "250");
             sendCommand(writer, reader, "QUIT", "221");
@@ -84,7 +87,8 @@ public class SmtpClientService {
 
     private void sendCommand(PrintWriter writer, BufferedReader reader, String command, String expectedCode) throws IOException {
         System.out.println("C: " + command);
-        writer.println(command);
+        writer.print(command + "\r\n");
+        writer.flush();
         readResponse(reader, expectedCode);
     }
 
