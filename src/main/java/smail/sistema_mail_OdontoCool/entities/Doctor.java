@@ -5,11 +5,8 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "doctores")
-public class Doctores {
-
-    @Id
-    @Column(name = "codigo_doctor")
-    private String codigoDoctor;
+@PrimaryKeyJoinColumn(name = "ci")
+public class Doctor extends Persona {
 
     @Column(name = "tiempo_experencia")
     private String tiempoExperiencia;
@@ -20,21 +17,10 @@ public class Doctores {
     @Column(name = "matricula_profesional", unique = true, nullable = false)
     private String matriculaProfesional;
 
-    @OneToOne
-    @JoinColumn(name = "id_persona", referencedColumnName = "ci", unique = true, nullable = false)
-    private Personas persona;
-
-    public Doctores() {
+    public Doctor() {
     }
 
     // Getters y Setters
-    public String getCodigoDoctor() {
-        return codigoDoctor;
-    }
-
-    public void setCodigoDoctor(String codigoDoctor) {
-        this.codigoDoctor = codigoDoctor;
-    }
 
     public String getTiempoExperiencia() {
         return tiempoExperiencia;
@@ -60,11 +46,4 @@ public class Doctores {
         this.matriculaProfesional = matriculaProfesional;
     }
 
-    public Personas getPersona() {
-        return persona;
-    }
-
-    public void setPersona(Personas persona) {
-        this.persona = persona;
-    }
 }

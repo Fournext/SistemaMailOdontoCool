@@ -5,36 +5,29 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "pacientes")
-public class Pacientes {
-
-    @Id
-    @Column(name = "codigo_paciente")
-    private String codigoPaciente;
+@PrimaryKeyJoinColumn(name = "ci")
+public class Paciente extends Persona {
 
     @Column(name = "nombre_contacto_emergencia")
     private String nombreContactoEmergencia;
 
-    @Column(name = "fecha_registro", insertable = false, updatable = false)
+    @Column(name = "fecha_registro", updatable = false)
     private LocalDate fechaRegistro;
 
     @Column(name = "telefono_emergencia")
     private String telefonoEmergencia;
 
-    @OneToOne
-    @JoinColumn(name = "id_persona", referencedColumnName = "ci", unique = true, nullable = false)
-    private Personas persona;
+    @PrePersist
+    public void prePersist() {
+        if (fechaRegistro == null) {
+            fechaRegistro = LocalDate.now();
+        }
+    }
 
-    public Pacientes() {
+    public Paciente() {
     }
 
     // Getters y Setters
-    public String getCodigoPaciente() {
-        return codigoPaciente;
-    }
-
-    public void setCodigoPaciente(String codigoPaciente) {
-        this.codigoPaciente = codigoPaciente;
-    }
 
     public String getNombreContactoEmergencia() {
         return nombreContactoEmergencia;
@@ -60,11 +53,4 @@ public class Pacientes {
         this.telefonoEmergencia = telefonoEmergencia;
     }
 
-    public Personas getPersona() {
-        return persona;
-    }
-
-    public void setPersona(Personas persona) {
-        this.persona = persona;
-    }
 }

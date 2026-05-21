@@ -3,8 +3,8 @@ package smail.sistema_mail_OdontoCool.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import smail.sistema_mail_OdontoCool.entities.Personas;
-import smail.sistema_mail_OdontoCool.entities.Secretarias;
+import smail.sistema_mail_OdontoCool.entities.Persona;
+import smail.sistema_mail_OdontoCool.entities.Secretaria;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
 
@@ -26,55 +26,86 @@ public class SecretariaService {
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
-            case "INS": insert(params, fromEmail); break;
-            case "LIS": list(fromEmail); break;
-            default: sendResponse(fromEmail, "Error", "Acción no soportada para Secretarias.");
+            case "INS":
+                insert(params, fromEmail);
+                break;
+            case "LIS":
+                list(params, fromEmail);
+                break;
+            default:
+                sendResponse(fromEmail, "Error", "Acción no soportada para Secretarias.");
         }
     }
 
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
-            // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5], FNac[6], CodSec[7], FContrat[8]
-            if (params.size() < 9) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para Secretaria. Se requieren 9.");
+            // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
+            // FNac[6], FContrat[7]
+            if (params.size() < 8) {
+                sendResponse(fromEmail, "Error", "Faltan parámetros para Secretaria. Se requieren 8.");
                 return;
             }
 
-            Personas p = new Personas();
-            p.setCi(params.get(0));
-            p.setNombres(params.get(1));
-            p.setApellidos(params.get(2));
-            p.setDireccion(params.get(3));
-            p.setGenero(params.get(4));
-            p.setTelefono(params.get(5));
-            p.setFechaNacimiento(LocalDate.parse(params.get(6)));
-            personaRepository.save(p);
+            Secretaria s = new Secretaria();
+            s.setCi(params.get(0));
+            s.setNombres(params.get(1));
+            s.setApellidos(params.get(2));
+            s.setDireccion(params.get(3));
+            s.setGenero(params.get(4));
+            s.setTelefono(params.get(5));
+            s.setFechaNacimiento(LocalDate.parse(params.get(6)));
 
-            Secretarias s = new Secretarias();
-            s.setCodigoSecretaria(params.get(7));
             s.setFechaContratacion(LocalDate.parse(params.get(8)));
-            s.setPersona(p);
             secretariaRepository.save(s);
 
-            sendResponse(fromEmail, "Éxito", "Secretaria " + p.getNombres() + " registrada correctamente.");
+            sendResponse(fromEmail, "Éxito", "Secretaria " + s.getNombres() + " registrada correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al registrar secretaria: " + e.getMessage());
         }
     }
 
-    private void list(String fromEmail) {
+    private void list(List<String> params, String fromEmail) {
         try {
-            List<Secretarias> lista = secretariaRepository.findAll();
-            StringBuilder sb = new StringBuilder("Lista de Secretarias:\n\n");
-            for (Secretarias s : lista) {
-                sb.append(String.format("- [%s] %s %s (Contratación: %s)\n", 
-                    s.getCodigoSecretaria(), s.getPersona().getNombres(), s.getPersona().getApellidos(), s.getFechaContratacion()));
+            StringBuilder sb = new StringBuilder();
+            if (params.size() == 0) {
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                return;
+            }
+            if (params.size() == 1) {
+
+                switch (params.get(0)) {
+                    case "*":
+                        sb = listAll();
+                        break;
+                    default:
+                        sendResponse(fromEmail, "Error", "Listado no permitido para Secretarias.");
+                }
+
             }
             sendResponse(fromEmail, "Listado de Secretarias", sb.toString());
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al listar secretarias: " + e.getMessage());
         }
+    }
+
+    private StringBuilder listAll() {
+        List<Secretaria> lista = secretariaRepository.findAll();
+        StringBuilder sb = new StringBuilder("Lista de Secretarias:\n\n");
+        for (Secretaria s : lista) {
+            sb.append(
+                    String.format("- [%s] %s %s Direccion: %s Genero %s Telefono %s Nacimiento %s (Contratación: %s)\n",
+                            s.getCi(),
+                            s.getNombres(),
+                            s.getApellidos(),
+                            s.getDireccion(),
+                            s.getGenero(),
+                            s.getTelefono(),
+                            s.getFechaNacimiento(),
+                            s.getFechaContratacion()));
+        }
+        return sb;
     }
 
     private void sendResponse(String to, String subject, String body) {

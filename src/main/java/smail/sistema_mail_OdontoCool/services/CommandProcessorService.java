@@ -31,8 +31,9 @@ public class CommandProcessorService {
     private SmtpClientService smtpService;
 
     // Regex mejorada: permite espacios entre el comando y los corchetes
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("^\\s*([A-Z]+)\\s*(?:\\[\\s*(.*)\\s*\\])?\\s*$",
-            Pattern.CASE_INSENSITIVE);
+    private static final Pattern COMMAND_PATTERN = Pattern.compile(
+            "^\\s*([A-Z]+)\\s*(?:\\[\\s*(.*)\\s*\\])?\\s*$",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     public void process(String subject, String fromEmail) {
         String cleanSubject = subject.trim();

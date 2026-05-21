@@ -3,8 +3,8 @@ package smail.sistema_mail_OdontoCool.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import smail.sistema_mail_OdontoCool.entities.Personas;
-import smail.sistema_mail_OdontoCool.entities.Propietarios;
+import smail.sistema_mail_OdontoCool.entities.Persona;
+import smail.sistema_mail_OdontoCool.entities.Propietario;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.PropietarioRepository;
 
@@ -31,7 +31,7 @@ public class PropietarioService {
                 insert(params, fromEmail);
                 break;
             case "LIS":
-                list(fromEmail);
+                list(params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Acción no soportada para Propietarios.");
@@ -42,46 +42,67 @@ public class PropietarioService {
     private void insert(List<String> params, String fromEmail) {
         try {
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
-            // FNac[6], FInicio[7], Porcentaje[8]
-            if (params.size() < 9) {
+            // FNac[6], Porcentaje[7]
+            if (params.size() < 8) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para Propietario. Se requieren 9.");
                 return;
             }
 
-            Personas p = new Personas();
-            p.setCi(params.get(0));
-            p.setNombres(params.get(1));
-            p.setApellidos(params.get(2));
-            p.setDireccion(params.get(3));
-            p.setGenero(params.get(4));
-            p.setTelefono(params.get(5));
-            p.setFechaNacimiento(LocalDate.parse(params.get(6)));
-            personaRepository.save(p);
+            Propietario prop = new Propietario();
+            prop.setCi(params.get(0));
+            prop.setNombres(params.get(1));
+            prop.setApellidos(params.get(2));
+            prop.setDireccion(params.get(3));
+            prop.setGenero(params.get(4));
+            prop.setTelefono(params.get(5));
+            prop.setFechaNacimiento(LocalDate.parse(params.get(6)));
 
-            Propietarios prop = new Propietarios();
-            prop.setFechaInicio(LocalDate.parse(params.get(7)));
-            prop.setPorcentajeParticipacion(new BigDecimal(params.get(8)));
-            prop.setPersona(p);
+            prop.setPorcentajeParticipacion(new BigDecimal(params.get(7)));
             propietarioRepository.save(prop);
 
-            sendResponse(fromEmail, "Éxito", "Propietario(a) " + p.getNombres() + " registrado(a) correctamente.");
+            sendResponse(fromEmail, "Éxito", "Propietario(a) " + prop.getNombres() + " registrado(a) correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al registrar propietario: " + e.getMessage());
         }
     }
 
-    private void list(String fromEmail) {
+    private void list(List<String> params, String fromEmail) {
         try {
-            List<Propietarios> lista = propietarioRepository.findAll();
-            StringBuilder sb = new StringBuilder("Lista de Propietarios:\n\n");
-            for (Propietarios p : lista) {
-                sb.append(String.format("- %s %s (Participación: %s%%)\n", 
-                    p.getPersona().getNombres(), p.getPersona().getApellidos(), p.getPorcentajeParticipacion()));
+            StringBuilder sb = new StringBuilder();
+            if (params.size() == 0) {
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                return;
+            }
+            if (params.size() == 1) {
+
+                switch (params.get(0)) {
+                    case "*":
+                        sb = listAll();
+                        break;
+                    default:
+                        sendResponse(fromEmail, "Error", "Listado no permitido para Propietarios.");
+                }
+
             }
             sendResponse(fromEmail, "Listado de Propietarios", sb.toString());
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al listar propietarios: " + e.getMessage());
         }
+    }
+
+    private StringBuilder listAll() {
+        List<Propietario> lista = propietarioRepository.findAll();
+        StringBuilder sb = new StringBuilder("Lista de Propietarios:\n\n");
+        for (Propietario p : lista) {
+            sb.append(String.format("- [%s] %s %s %s (Participación: %s%%)\n",
+                    p.getCi(),
+                    p.getNombres(),
+                    p.getApellidos(),
+                    p.getFechaRegistro(),
+                    p.getPorcentajeParticipacion()));
+        }
+        return sb;
     }
 
     private void sendResponse(String to, String subject, String body) {

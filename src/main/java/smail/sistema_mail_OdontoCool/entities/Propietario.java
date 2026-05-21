@@ -6,33 +6,26 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "propietarios")
-public class Propietarios {
+@PrimaryKeyJoinColumn(name = "ci")
+public class Propietario extends Persona {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "fecha_inicio")
+    @Column(name = "fecha_inicio", updatable = false)
     private LocalDate fechaInicio;
 
     @Column(name = "porcentaje_participacion")
     private BigDecimal porcentajeParticipacion;
 
-    @OneToOne
-    @JoinColumn(name = "id_persona", referencedColumnName = "ci", unique = true, nullable = false)
-    private Personas persona;
+    @PrePersist
+    public void prePersist() {
+        if (fechaInicio == null) {
+            fechaInicio = LocalDate.now();
+        }
+    }
 
-    public Propietarios() {
+    public Propietario() {
     }
 
     // Getters y Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public LocalDate getFechaInicio() {
         return fechaInicio;
@@ -50,11 +43,4 @@ public class Propietarios {
         this.porcentajeParticipacion = porcentajeParticipacion;
     }
 
-    public Personas getPersona() {
-        return persona;
-    }
-
-    public void setPersona(Personas persona) {
-        this.persona = persona;
-    }
 }

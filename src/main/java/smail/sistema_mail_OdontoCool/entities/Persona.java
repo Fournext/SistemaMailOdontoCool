@@ -5,9 +5,11 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "personas")
-public class Personas {
+@Inheritance(strategy = InheritanceType.JOINED)
+public class Persona {
 
     @Id
+    @Column(name = "ci", nullable = false, updatable = false, length = 20)
     private String ci;
 
     @Column(nullable = false)
@@ -22,19 +24,26 @@ public class Personas {
     private String genero;
     private String telefono;
 
-    @Column(insertable = false)
-    private Boolean estado;
+    @Column(name = "estado")
+    private String estado = "ACTIVO";
 
-    @Column(name = "fecha_registro", insertable = false, updatable = false)
+    @Column(name = "fecha_registro", updatable = false)
     private LocalDate fechaRegistro;
 
     @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
 
-    public Personas() {
+    @PrePersist
+    public void prePersist() {
+        if (fechaRegistro == null) {
+            fechaRegistro = LocalDate.now();
+        }
     }
 
-    public Personas(String ci, String nombres, String apellidos, String direccion, String genero, String telefono,
+    public Persona() {
+    }
+
+    public Persona(String ci, String nombres, String apellidos, String direccion, String genero, String telefono,
             LocalDate fechaNacimiento) {
         this.ci = ci;
         this.nombres = nombres;
@@ -94,11 +103,11 @@ public class Personas {
         this.telefono = telefono;
     }
 
-    public Boolean getEstado() {
+    public String getEstado() {
         return estado;
     }
 
-    public void setEstado(Boolean estado) {
+    public void setEstado(String estado) {
         this.estado = estado;
     }
 
@@ -120,6 +129,7 @@ public class Personas {
 
     @Override
     public String toString() {
-        return String.format("[%s] %s %s", ci, nombres, apellidos);
+        return String.format("[%s] - %s - %s - %s - %s - %s - %s - %s - %s", ci, nombres, apellidos, estado, genero,
+                telefono, fechaNacimiento, direccion, fechaRegistro);
     }
 }

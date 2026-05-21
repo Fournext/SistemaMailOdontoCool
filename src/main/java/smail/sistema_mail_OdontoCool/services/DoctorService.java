@@ -3,10 +3,8 @@ package smail.sistema_mail_OdontoCool.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import smail.sistema_mail_OdontoCool.entities.Doctores;
-import smail.sistema_mail_OdontoCool.entities.Personas;
+import smail.sistema_mail_OdontoCool.entities.Doctor;
 import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
-import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -19,9 +17,6 @@ public class DoctorService {
     private DoctorRepository doctorRepository;
 
     @Autowired
-    private PersonaRepository personaRepository;
-
-    @Autowired
     private SmtpClientService smtpService;
 
     public void handle(String action, List<String> params, String fromEmail) {
@@ -30,7 +25,7 @@ public class DoctorService {
                 insert(params, fromEmail);
                 break;
             case "LIS":
-                list(fromEmail);
+                list(params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Acción no permitida para Doctores.");
@@ -41,49 +36,74 @@ public class DoctorService {
     private void insert(List<String> params, String fromEmail) {
         try {
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Direccion[3], Genero[4],
-            // Telefono[5], FechaNac[6], Codigo[7], Exp[8], Matricula[9]
-            if (params.size() < 10) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para Doctor. Se requieren 10.");
+            // Telefono[5], FechaNac[6], Exp[7], Matricula[8]
+            if (params.size() < 9) {
+                sendResponse(fromEmail, "Error", "Faltan parámetros para Doctor. Se requieren 9.");
                 return;
             }
 
-            Personas p = new Personas();
-            p.setCi(params.get(0));
-            p.setNombres(params.get(1));
-            p.setApellidos(params.get(2));
-            p.setDireccion(params.get(3));
-            p.setGenero(params.get(4));
-            p.setTelefono(params.get(5));
-            p.setFechaNacimiento(LocalDate.parse(params.get(6)));
-            personaRepository.save(p);
+            Doctor d = new Doctor();
+            d.setCi(params.get(0));
+            d.setNombres(params.get(1));
+            d.setApellidos(params.get(2));
+            d.setDireccion(params.get(3));
+            d.setGenero(params.get(4));
+            d.setTelefono(params.get(5));
+            d.setFechaNacimiento(LocalDate.parse(params.get(6)));
 
-            Doctores d = new Doctores();
-            d.setCodigoDoctor(params.get(7));
-            d.setTiempoExperiencia(params.get(8));
-            d.setMatriculaProfesional(params.get(9));
+            d.setTiempoExperiencia(params.get(7));
+            d.setMatriculaProfesional(params.get(8));
             d.setFechaContratacion(LocalDate.now());
-            d.setPersona(p);
             doctorRepository.save(d);
 
-            sendResponse(fromEmail, "Éxito", "Doctor(a) " + p.getNombres() + " registrado(a) correctamente.");
+            sendResponse(fromEmail, "Éxito", "Doctor(a) " + d.getNombres() + " registrado(a) correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo registrar doctor: " + e.getMessage());
         }
     }
 
-    private void list(String fromEmail) {
+    private void list(List<String> params, String fromEmail) {
         try {
-            List<Doctores> lista = doctorRepository.findAll();
-            StringBuilder sb = new StringBuilder("Lista de Doctores:\n\n");
-            for (Doctores d : lista) {
-                sb.append(String.format("- [%s] Dr. %s %s (Matrícula: %s)\n",
-                        d.getCodigoDoctor(), d.getPersona().getNombres(), d.getPersona().getApellidos(),
-                        d.getMatriculaProfesional()));
+            StringBuilder sb = new StringBuilder();
+            if (params.size() == 0) {
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                return;
             }
+            if (params.size() == 1) {
+
+                switch (params.get(0)) {
+                    case "*":
+                        sb = listAll();
+                        break;
+                    default:
+                        sendResponse(fromEmail, "Error", "Listado no permitido para Doctores.");
+                }
+
+            }
+
             sendResponse(fromEmail, "Listado de Doctores", sb.toString());
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al listar doctores: " + e.getMessage());
         }
+    }
+
+    private StringBuilder listAll() {
+        List<Doctor> lista = doctorRepository.findAll();
+        StringBuilder sb = new StringBuilder("Lista de Doctores:\n\n");
+        for (Doctor d : lista) {
+            sb.append(String.format(
+                    "- [%s] Dr. %s %s Direccion: %s Genero %s Telefono %s Nacimiento %s (Matrícula: %s)\n",
+                    d.getCi(),
+                    d.getNombres(),
+                    d.getApellidos(),
+                    d.getDireccion(),
+                    d.getGenero(),
+                    d.getTelefono(),
+                    d.getFechaNacimiento(),
+                    d.getMatriculaProfesional()));
+        }
+        return sb;
     }
 
     private void sendResponse(String to, String subject, String body) {

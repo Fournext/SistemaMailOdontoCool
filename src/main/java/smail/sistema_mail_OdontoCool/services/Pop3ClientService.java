@@ -8,6 +8,8 @@ import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class Pop3ClientService {
@@ -50,12 +52,12 @@ public class Pop3ClientService {
 
     public List<EmailMessage> getEmails() throws IOException {
         List<EmailMessage> messages = new ArrayList<>();
-        
-        try (Socket socket = createSocket();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
 
-            readResponse(reader); 
+        try (Socket socket = createSocket();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
+
+            readResponse(reader);
 
             sendCommand(writer, reader, "USER " + user);
             sendCommand(writer, reader, "PASS " + password);
@@ -75,39 +77,108 @@ public class Pop3ClientService {
     }
 
     private EmailMessage retrieveMessage(PrintWriter writer, BufferedReader reader, int msgNum) throws IOException {
-        writer.println("RETR " + msgNum);
+        writer.print("RETR " + msgNum + "\r\n");
+        writer.flush();
+
         String response = reader.readLine();
-        if (!response.startsWith("+OK")) {
+
+        if (response == null || !response.startsWith("+OK")) {
             throw new IOException("Error al recuperar mensaje: " + response);
         }
 
         EmailMessage email = new EmailMessage();
+
+        List<String> rawHeaderLines = new ArrayList<>();
         StringBuilder bodyBuilder = new StringBuilder();
+
         boolean isBody = false;
         String line;
 
         while ((line = reader.readLine()) != null) {
-            if (line.equals(".")) break;
+            if (line.equals(".")) {
+                break;
+            }
+
+            // POP3 puede enviar líneas escapadas con doble punto
+            if (line.startsWith("..")) {
+                line = line.substring(1);
+            }
 
             if (!isBody) {
                 if (line.isEmpty()) {
                     isBody = true;
-                } else if (line.toLowerCase().startsWith("from: ")) {
-                    String rawFrom = line.substring(6).trim();
-                    if (rawFrom.contains("<") && rawFrom.contains(">")) {
-                        email.from = rawFrom.substring(rawFrom.indexOf("<") + 1, rawFrom.indexOf(">"));
-                    } else {
-                        email.from = rawFrom;
-                    }
-                } else if (line.toLowerCase().startsWith("subject: ")) {
-                    email.subject = line.substring(9).trim();
+                } else {
+                    rawHeaderLines.add(line);
                 }
             } else {
                 bodyBuilder.append(line).append("\n");
             }
         }
+
+        Map<String, String> headers = parseHeaders(rawHeaderLines);
+
+        String rawFrom = headers.getOrDefault("from", "");
+        email.from = extractEmail(rawFrom);
+
+        email.subject = headers.getOrDefault("subject", "");
         email.body = bodyBuilder.toString();
+
         return email;
+    }
+
+    private Map<String, String> parseHeaders(List<String> rawHeaderLines) {
+        Map<String, String> headers = new HashMap<>();
+
+        String currentHeaderName = null;
+        StringBuilder currentHeaderValue = new StringBuilder();
+
+        for (String line : rawHeaderLines) {
+
+            // Si empieza con espacio o tab, es continuación del header anterior
+            if (line.startsWith(" ") || line.startsWith("\t")) {
+                if (currentHeaderName != null) {
+                    currentHeaderValue.append(" ").append(line.trim());
+                }
+            } else {
+                // Guardar el header anterior
+                if (currentHeaderName != null) {
+                    headers.put(
+                            currentHeaderName.toLowerCase(),
+                            currentHeaderValue.toString().trim());
+                }
+
+                int separatorIndex = line.indexOf(":");
+
+                if (separatorIndex != -1) {
+                    currentHeaderName = line.substring(0, separatorIndex).trim();
+                    currentHeaderValue = new StringBuilder(
+                            line.substring(separatorIndex + 1).trim());
+                }
+            }
+        }
+
+        // Guardar el último header
+        if (currentHeaderName != null) {
+            headers.put(
+                    currentHeaderName.toLowerCase(),
+                    currentHeaderValue.toString().trim());
+        }
+
+        return headers;
+    }
+
+    private String extractEmail(String rawFrom) {
+        if (rawFrom == null || rawFrom.isBlank()) {
+            return "";
+        }
+
+        if (rawFrom.contains("<") && rawFrom.contains(">")) {
+            return rawFrom.substring(
+                    rawFrom.indexOf("<") + 1,
+                    rawFrom.indexOf(">")).trim();
+        }
+
+        return rawFrom.trim();
     }
 
     private String sendCommand(PrintWriter writer, BufferedReader reader, String command) throws IOException {
@@ -125,8 +196,8 @@ public class Pop3ClientService {
 
     public void deleteMessage(int msgNum) throws IOException {
         try (Socket socket = createSocket();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
             readResponse(reader);
             sendCommand(writer, reader, "USER " + user);
             sendCommand(writer, reader, "PASS " + password);

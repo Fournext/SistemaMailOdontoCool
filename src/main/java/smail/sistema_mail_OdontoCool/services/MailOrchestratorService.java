@@ -25,7 +25,7 @@ public class MailOrchestratorService {
         System.out.println("--- Revisando buzón de correo ---");
         try {
             List<Pop3ClientService.EmailMessage> emails = pop3Service.getEmails();
-            
+
             for (Pop3ClientService.EmailMessage email : emails) {
                 // Ignorar correos enviados por el propio bot para evitar bucles infinitos
                 if (email.from != null && email.from.equalsIgnoreCase(botEmail)) {
@@ -34,14 +34,14 @@ public class MailOrchestratorService {
                 }
 
                 System.out.println("Procesando correo de: " + email.from);
-                
+
                 // Procesar el comando basado en el Subject
                 commandProcessor.process(email.subject, email.from);
-                
+
                 // Eliminar correo después de procesar para no repetirlo
                 pop3Service.deleteMessage(email.id);
             }
-            
+
         } catch (IOException e) {
             System.err.println("Error al consultar el buzón: " + e.getMessage());
         }
