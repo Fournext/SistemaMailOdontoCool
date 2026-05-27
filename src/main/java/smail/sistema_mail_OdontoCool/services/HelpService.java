@@ -1,8 +1,9 @@
 package smail.sistema_mail_OdontoCool.services;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.io.IOException;
 
 @Service
 public class HelpService {
@@ -26,6 +27,7 @@ public class HelpService {
                 + "   - DELDOC[\"CI\"]\n"
                 + "        Ejemplo: DELDOC[\"12345678\"]\n"
                 + "   - LISDOC[*] -> Listar todos los doctores.\n\n"
+                + "   - ASEDOC[\"CI Doctor\", \"UUID Especialidad\"] -> Asignar una especialidad a un doctor.\n"
                 + "2. PACIENTES (PAC):\n"
                 + "   - INSPAC[\"CI\", \"Nombres\", \"Apellidos\", \"Direccion\", \"Genero\", \"Telf\", \"FechaNacimiento\", \"ContactoEmerg\", \"TelfEmerg\", \"Correo\", \"Contraseña\"]\n"
                 + "        Ejemplo: INSPAC[\"87654321\", \"Maria\", \"Gomez\", \"Av. Siempre Viva 456\", \"F\", \"555-5678\", \"1990-02-02\", \"Carlos Gomez\", \"555-8765\", \"maria@gmail.com\", \"m456\"]\n"
@@ -53,6 +55,9 @@ public class HelpService {
                 + "   - DELPRO[\"CI\"]\n"
                 + "        Ejemplo: DELPRO[\"55667788\"]\n"
                 + "   - LISPRO[*] -> Listar todos los propietarios.\n\n"
+                + "5. ESPECIALIDADES (ESP):\n"
+                + "   - INSESP[\"Nombre\", \"Descripcion\",\"estado\"]\n"
+                + "   - LISESP[*] -> Listar todas las especialidades.\n"
                 + "========================================\n"
                 + "NOTA: Las fechas deben ir en formato AAAA-MM-DD (Ej: 1995-05-15).\n"
                 + "(El porcentaje es un número decimal que representa la participación del propietario en la clínica, por ejemplo, 25 para un 25% de participación)"

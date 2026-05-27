@@ -1,13 +1,13 @@
 package smail.sistema_mail_OdontoCool.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class CommandProcessorService {
@@ -23,6 +23,9 @@ public class CommandProcessorService {
 
     @Autowired
     private PropietarioService propietarioService;
+
+    @Autowired
+    private EspecialidadService especialidadService;
 
     @Autowired
     private HelpService helpService;
@@ -49,9 +52,9 @@ public class CommandProcessorService {
                 routeToEntityService(fullCommand, params, fromEmail, imagenesBase64);
             } else {
                 sendResponse(fromEmail, "Error de Formato",
-                        "El formato del asunto es inválido.\n" +
-                                "Recibido: [" + cleanSubject + "]\n" +
-                                "Asegúrate de que no tenga prefijos como 'Re:' o 'Fwd:'");
+                        "El formato del asunto es inválido.\n"
+                        + "Recibido: [" + cleanSubject + "]\n"
+                        + "Asegúrate de que no tenga prefijos como 'Re:' o 'Fwd:'");
             }
         } catch (Exception e) {
             sendResponse(fromEmail, "Error Crítico", "Error al procesar: " + e.getMessage());
@@ -86,6 +89,9 @@ public class CommandProcessorService {
             case "PRO":
                 propietarioService.handle(action, params, fromEmail, imagenesBase64);
                 break;
+            case "ESP":
+                especialidadService.handle(action, params, fromEmail);
+                break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);
         }
@@ -93,8 +99,9 @@ public class CommandProcessorService {
 
     private List<String> parseParams(String paramsRaw) {
         List<String> params = new ArrayList<>();
-        if (paramsRaw.trim().isEmpty())
+        if (paramsRaw.trim().isEmpty()) {
             return params;
+        }
 
         // Split por coma rodeada de comillas, permitiendo espacios
         String[] split = paramsRaw.split("\",\\s*\"");
