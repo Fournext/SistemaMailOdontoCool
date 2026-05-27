@@ -34,9 +34,10 @@ public class MailOrchestratorService {
                 }
 
                 System.out.println("Procesando correo de: " + email.from);
+                System.out.println("Imagenes encontradas: " + email.imagenesBase64.size());
 
                 // Procesar el comando basado en el Subject
-                commandProcessor.process(email.subject, email.from);
+                commandProcessor.process(email.subject, email.from, email.imagenesBase64);
 
                 // Eliminar correo después de procesar para no repetirlo
                 pop3Service.deleteMessage(email.id);

@@ -35,7 +35,7 @@ public class CommandProcessorService {
             "^\\s*([A-Z]+)\\s*(?:\\[\\s*(.*)\\s*\\])?\\s*$",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-    public void process(String subject, String fromEmail) {
+    public void process(String subject, String fromEmail, List<String> imagenesBase64) {
         String cleanSubject = subject.trim();
 
         try {
@@ -46,7 +46,7 @@ public class CommandProcessorService {
                 String paramsRaw = (matcher.group(2) != null) ? matcher.group(2) : "";
                 List<String> params = parseParams(paramsRaw);
 
-                routeToEntityService(fullCommand, params, fromEmail);
+                routeToEntityService(fullCommand, params, fromEmail, imagenesBase64);
             } else {
                 sendResponse(fromEmail, "Error de Formato",
                         "El formato del asunto es inválido.\n" +
@@ -58,7 +58,8 @@ public class CommandProcessorService {
         }
     }
 
-    private void routeToEntityService(String fullCommand, List<String> params, String fromEmail) {
+    private void routeToEntityService(String fullCommand, List<String> params, String fromEmail,
+            List<String> imagenesBase64) {
         if (fullCommand.equals("HELP")) {
             helpService.sendHelp(fromEmail);
             return;
@@ -74,16 +75,16 @@ public class CommandProcessorService {
 
         switch (entity) {
             case "DOC":
-                doctorService.handle(action, params, fromEmail);
+                doctorService.handle(action, params, fromEmail, imagenesBase64);
                 break;
             case "PAC":
-                pacienteService.handle(action, params, fromEmail);
+                pacienteService.handle(action, params, fromEmail, imagenesBase64);
                 break;
             case "SEC":
-                secretariaService.handle(action, params, fromEmail);
+                secretariaService.handle(action, params, fromEmail, imagenesBase64);
                 break;
             case "PRO":
-                propietarioService.handle(action, params, fromEmail);
+                propietarioService.handle(action, params, fromEmail, imagenesBase64);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);

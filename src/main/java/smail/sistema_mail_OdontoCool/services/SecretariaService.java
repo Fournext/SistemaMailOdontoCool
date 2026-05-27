@@ -3,10 +3,10 @@ package smail.sistema_mail_OdontoCool.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Secretaria;
-import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
+import smail.sistema_mail_OdontoCool.entities.Usuario;
 import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -19,18 +19,29 @@ public class SecretariaService {
     private SecretariaRepository secretariaRepository;
 
     @Autowired
-    private PersonaRepository personaRepository;
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private CloudinaryServices cloudinaryServices;
 
     @Autowired
     private SmtpClientService smtpService;
+    @Autowired
+    private PasswordService passwordService;
 
-    public void handle(String action, List<String> params, String fromEmail) {
+    public void handle(String action, List<String> params, String fromEmail, List<String> imagenesBase64) {
         switch (action) {
             case "INS":
-                insert(params, fromEmail);
+                insert(params, fromEmail, imagenesBase64);
                 break;
             case "LIS":
                 list(params, fromEmail);
+                break;
+            case "MOD":
+                update(params, fromEmail, imagenesBase64);
+                break;
+            case "DEL":
+                delete(params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Acción no soportada para Secretarias.");
@@ -38,12 +49,12 @@ public class SecretariaService {
     }
 
     @Transactional
-    private void insert(List<String> params, String fromEmail) {
+    private void insert(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
-            // FNac[6], FContrat[7]
-            if (params.size() < 8) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para Secretaria. Se requieren 8.");
+            // FNac[6], FContrat[7], [EMAIL_ADDRESS][8], [PASSWORD][9]
+            if (params.size() < 10) {
+                sendResponse(fromEmail, "Error", "Faltan parámetros para Secretaria. Se requieren 10.");
                 return;
             }
 
@@ -56,8 +67,23 @@ public class SecretariaService {
             s.setTelefono(params.get(5));
             s.setFechaNacimiento(LocalDate.parse(params.get(6)));
 
-            s.setFechaContratacion(LocalDate.parse(params.get(8)));
+            s.setFechaContratacion(LocalDate.parse(params.get(7)));
             secretariaRepository.save(s);
+
+            String firstLetter = (s.getApellidos() != null && !s.getApellidos().trim().isEmpty())
+                    ? s.getApellidos().trim().substring(0, 1).toUpperCase()
+                    : "";
+
+            String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
+
+            Usuario u = new Usuario();
+            u.setCodigoUsuario(firstLetter + s.getCi());
+            u.setCorreoElectronico(params.get(8));
+            u.setContraseña(passwordService.hashPassword(params.get(9)));
+            u.setFotoUrl(fotoUrl);
+            u.setEstado("ACTIVO");
+            u.setPersona(s);
+            usuarioRepository.save(u);
 
             sendResponse(fromEmail, "Éxito", "Secretaria " + s.getNombres() + " registrada correctamente.");
         } catch (Exception e) {
@@ -106,6 +132,76 @@ public class SecretariaService {
                             s.getFechaContratacion()));
         }
         return sb;
+    }
+
+    @Transactional
+    private void update(List<String> params, String fromEmail, List<String> imagenesBase64) {
+        try {
+            String ci = params.get(0);
+            String nombres = params.get(1);
+            String apellidos = params.get(2);
+            String direccion = params.get(3);
+            String genero = params.get(4);
+            String telefono = params.get(5);
+            String fechaNacimiento = params.get(6);
+            String fechaContratacion = params.get(7);
+            String correoElectronico = params.get(8);
+            String contraseña = params.get(9);
+
+            Secretaria s = secretariaRepository.findById(ci).orElse(null);
+            if (s == null) {
+                sendResponse(fromEmail, "Error", "Secretaria no encontrada.");
+                return;
+            }
+            s.setNombres(nombres);
+            s.setApellidos(apellidos);
+            s.setDireccion(direccion);
+            s.setGenero(genero);
+            s.setTelefono(telefono);
+            s.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
+            s.setFechaContratacion(LocalDate.parse(fechaContratacion));
+            secretariaRepository.save(s);
+
+            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+            if (u == null) {
+                sendResponse(fromEmail, "Error", "Usuario no encontrado.");
+                return;
+            }
+            u.setCorreoElectronico(correoElectronico);
+            u.setContraseña(passwordService.hashPassword(contraseña));
+            if (imagenesBase64 != null && !imagenesBase64.isEmpty()) {
+                String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
+                u.setFotoUrl(fotoUrl);
+            }
+            usuarioRepository.save(u);
+
+            sendResponse(fromEmail, "Éxito", "Secretaria " + nombres + " actualizada correctamente.");
+        } catch (Exception e) {
+            sendResponse(fromEmail, "Error", "No se pudo actualizar secretaria: " + e.getMessage());
+        }
+    }
+
+    private void delete(List<String> params, String fromEmail) {
+        try {
+            String ci = params.get(0);
+            Secretaria s = secretariaRepository.findById(ci).orElse(null);
+
+            if (s == null) {
+                sendResponse(fromEmail, "Error", "Secretaria no encontrada.");
+                return;
+            }
+
+            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+
+            if (u != null) {
+                usuarioRepository.delete(u);
+            }
+            secretariaRepository.delete(s);
+
+            sendResponse(fromEmail, "Éxito", "Secretaria " + s.getNombres() + " eliminada correctamente.");
+        } catch (Exception e) {
+            sendResponse(fromEmail, "Error", "No se pudo eliminar secretaria: " + e.getMessage());
+        }
     }
 
     private void sendResponse(String to, String subject, String body) {

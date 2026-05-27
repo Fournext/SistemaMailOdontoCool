@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Doctor;
 import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
+import smail.sistema_mail_OdontoCool.entities.Usuario;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -17,15 +19,29 @@ public class DoctorService {
     private DoctorRepository doctorRepository;
 
     @Autowired
-    private SmtpClientService smtpService;
+    private UsuarioRepository usuarioRepository;
 
-    public void handle(String action, List<String> params, String fromEmail) {
+    @Autowired
+    private CloudinaryServices cloudinaryServices;
+
+    @Autowired
+    private SmtpClientService smtpService;
+    @Autowired
+    private PasswordService passwordService;
+
+    public void handle(String action, List<String> params, String fromEmail, List<String> imagenesBase64) {
         switch (action) {
             case "INS":
-                insert(params, fromEmail);
+                insert(params, fromEmail, imagenesBase64);
                 break;
             case "LIS":
                 list(params, fromEmail);
+                break;
+            case "MOD":
+                update(params, fromEmail, imagenesBase64);
+                break;
+            case "DEL":
+                delete(params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Acción no permitida para Doctores.");
@@ -33,12 +49,12 @@ public class DoctorService {
     }
 
     @Transactional
-    private void insert(List<String> params, String fromEmail) {
+    private void insert(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Direccion[3], Genero[4],
-            // Telefono[5], FechaNac[6], Exp[7], Matricula[8]
-            if (params.size() < 9) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para Doctor. Se requieren 9.");
+            // Telefono[5], FechaNac[6], Exp[7], Matricula[8], CORREO[9], PASS[10],
+            if (params.size() < 11) {
+                sendResponse(fromEmail, "Error", "Faltan parámetros para Doctor. Se requieren 11.");
                 return;
             }
 
@@ -55,6 +71,23 @@ public class DoctorService {
             d.setMatriculaProfesional(params.get(8));
             d.setFechaContratacion(LocalDate.now());
             doctorRepository.save(d);
+
+            // Codigo de usuario: AP + CI
+            String firstLetter = (d.getApellidos() != null && !d.getApellidos().trim().isEmpty())
+                    ? d.getApellidos().trim().substring(0, 1).toUpperCase()
+                    : "";
+
+            // Convertir a base 64 y Subir a Cloudinary
+            String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
+
+            Usuario u = new Usuario();
+            u.setCodigoUsuario(firstLetter + d.getCi());
+            u.setCorreoElectronico(params.get(9));
+            u.setContraseña(passwordService.hashPassword(params.get(10)));
+            u.setFotoUrl(fotoUrl);
+            u.setEstado("ACTIVO");
+            u.setPersona(d);
+            usuarioRepository.save(u);
 
             sendResponse(fromEmail, "Éxito", "Doctor(a) " + d.getNombres() + " registrado(a) correctamente.");
         } catch (Exception e) {
@@ -104,6 +137,78 @@ public class DoctorService {
                     d.getMatriculaProfesional()));
         }
         return sb;
+    }
+
+    @Transactional
+    private void update(List<String> params, String fromEmail, List<String> imagenesBase64) {
+        try {
+            String ci = params.get(0);
+            String nombres = params.get(1);
+            String apellidos = params.get(2);
+            String direccion = params.get(3);
+            String genero = params.get(4);
+            String telefono = params.get(5);
+            String fechaNacimiento = params.get(6);
+            String tiempoExperiencia = params.get(7);
+            String matriculaProfesional = params.get(8);
+            String correoElectronico = params.get(9);
+            String contraseña = params.get(10);
+
+            Doctor d = doctorRepository.findById(ci).orElse(null);
+            if (d == null) {
+                sendResponse(fromEmail, "Error", "Doctor no encontrado.");
+                return;
+            }
+            d.setNombres(nombres);
+            d.setApellidos(apellidos);
+            d.setDireccion(direccion);
+            d.setGenero(genero);
+            d.setTelefono(telefono);
+            d.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
+            d.setTiempoExperiencia(tiempoExperiencia);
+            d.setMatriculaProfesional(matriculaProfesional);
+            doctorRepository.save(d);
+
+            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+            if (u == null) {
+                sendResponse(fromEmail, "Error", "Usuario no encontrado.");
+                return;
+            }
+            u.setCorreoElectronico(correoElectronico);
+            u.setContraseña(passwordService.hashPassword(contraseña));
+            if (imagenesBase64 != null && !imagenesBase64.isEmpty()) {
+                String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
+                u.setFotoUrl(fotoUrl);
+            }
+            usuarioRepository.save(u);
+
+            sendResponse(fromEmail, "Éxito", "Doctor(a) " + nombres + " actualizado(a) correctamente.");
+        } catch (Exception e) {
+            sendResponse(fromEmail, "Error", "No se pudo actualizar doctor: " + e.getMessage());
+        }
+    }
+
+    private void delete(List<String> params, String fromEmail) {
+        try {
+            String ci = params.get(0);
+            Doctor d = doctorRepository.findById(ci).orElse(null);
+
+            if (d == null) {
+                sendResponse(fromEmail, "Error", "Doctor no encontrado.");
+                return;
+            }
+
+            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+
+            if (u != null) {
+                usuarioRepository.delete(u);
+            }
+            doctorRepository.delete(d);
+
+            sendResponse(fromEmail, "Éxito", "Doctor(a) " + d.getNombres() + " eliminado(a) correctamente.");
+        } catch (Exception e) {
+            sendResponse(fromEmail, "Error", "No se pudo eliminar doctor: " + e.getMessage());
+        }
     }
 
     private void sendResponse(String to, String subject, String body) {
