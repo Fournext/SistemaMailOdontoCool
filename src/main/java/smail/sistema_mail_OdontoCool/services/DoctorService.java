@@ -16,10 +16,6 @@ import smail.sistema_mail_OdontoCool.repositories.EspecialidadRepository;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.List;
-
 @Service
 public class DoctorService {
 
