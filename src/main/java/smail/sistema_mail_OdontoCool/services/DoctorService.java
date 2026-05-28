@@ -1,20 +1,27 @@
 package smail.sistema_mail_OdontoCool.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import smail.sistema_mail_OdontoCool.entities.Doctor;
-import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import smail.sistema_mail_OdontoCool.entities.Doctor;
+import smail.sistema_mail_OdontoCool.entities.Especialidad;
+import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
+import smail.sistema_mail_OdontoCool.repositories.EspecialidadRepository;
 
 @Service
 public class DoctorService {
 
     @Autowired
     private DoctorRepository doctorRepository;
+
+    @Autowired
+    private EspecialidadRepository especialidadRepository;
 
     @Autowired
     private SmtpClientService smtpService;
@@ -26,6 +33,9 @@ public class DoctorService {
                 break;
             case "LIS":
                 list(params, fromEmail);
+                break;
+            case "ASE":
+                asignarEspecialidad(params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Acción no permitida para Doctores.");
@@ -59,6 +69,32 @@ public class DoctorService {
             sendResponse(fromEmail, "Éxito", "Doctor(a) " + d.getNombres() + " registrado(a) correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo registrar doctor: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void asignarEspecialidad(List<String> params, String fromEmail) {
+        try {
+            if (params.size() < 2) {
+                sendResponse(fromEmail, "Error", "Faltan parámetros. Se requiere CI doctor e ID especialidad.");
+                return;
+            }
+
+            String doctorCi = params.get(0);
+            UUID especialidadId = UUID.fromString(params.get(1));
+
+            Doctor doctor = doctorRepository.findById(doctorCi)
+                    .orElseThrow(() -> new RuntimeException("Doctor no encontrado"));
+
+            Especialidad especialidad = especialidadRepository.findById(especialidadId)
+                    .orElseThrow(() -> new RuntimeException("Especialidad no encontrada"));
+
+            doctor.getEspecialidades().add(especialidad);
+            doctorRepository.save(doctor);
+
+            sendResponse(fromEmail, "Éxito", "Especialidad asignada correctamente al doctor.");
+        } catch (Exception e) {
+            sendResponse(fromEmail, "Error", "No se pudo asignar la especialidad. Detalles: " + e.getMessage());
         }
     }
 

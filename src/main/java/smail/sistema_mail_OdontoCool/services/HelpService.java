@@ -1,8 +1,9 @@
 package smail.sistema_mail_OdontoCool.services;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.io.IOException;
 
 @Service
 public class HelpService {
@@ -20,6 +21,7 @@ public class HelpService {
                 + "   - INSDOC[\"CI\", \"Nombres\", \"Apellidos\", \"Direccion\", \"Genero\", \"Telf\", \"FechaNacimiento\", \"Exp\", \"Matrícula\"]\n"
                 + "         Ejemplo: INSDOC[\"12345678\", \"Juan\", \"Perez\", \"Calle Falsa 123\", \"M\", \"555-1234\", \"1980-01-01\", \"10 años\", \"MAT-001\"]\n"
                 + "   - LISDOC[*] -> Listar todos los doctores.\n\n"
+                + "   - ASEDOC[\"CI Doctor\", \"UUID Especialidad\"] -> Asignar una especialidad a un doctor.\n"
                 + "2. PACIENTES (PAC):\n"
                 + "   - INSPAC[\"CI\", \"Nombres\", \"Apellidos\", \"Direccion\", \"Genero\", \"Telf\", \"FechaNacimiento\", \"ContactoEmerg\", \"TelfEmerg\"]\n"
                 + "        Ejemplo: INSPAC[\"87654321\", \"Maria\", \"Gomez\", \"Avenida Siempre Viva 456\", \"F\", \"555-5678\", \"1990-02-02\", \"Carlos Gomez\", \"555-8765\"]\n"
@@ -33,6 +35,9 @@ public class HelpService {
                 + "        Ejemplo: INSPRO[\"55667788\", \"Luis\", \"Martinez\", \"Avenida Sol 321\", \"M\", \"555-6789\", \"1975-04-04\", \"2005-06-01\", \"25\"]\n"
                 + "         (El porcentaje es un número decimal que representa la participación del propietario en la clínica, por ejemplo, 25 para un 25% de participación)\n"
                 + "   - LISPRO[*] -> Listar todos los propietarios.\n\n"
+                + "5. ESPECIALIDADES (ESP):\n"
+                + "   - INSESP[\"Nombre\", \"Descripcion\",\"estado\"]\n"
+                + "   - LISESP[*] -> Listar todas las especialidades.\n"
                 + "========================================\n"
                 + "NOTA: Las fechas deben ir en formato AAAA-MM-DD (Ej: 1995-05-15).\n"
                 + "========================================\n";
