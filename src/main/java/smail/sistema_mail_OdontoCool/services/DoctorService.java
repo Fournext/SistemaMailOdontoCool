@@ -11,16 +11,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 import smail.sistema_mail_OdontoCool.entities.Doctor;
 import smail.sistema_mail_OdontoCool.entities.Especialidad;
+import smail.sistema_mail_OdontoCool.entities.Persona;
+import smail.sistema_mail_OdontoCool.entities.Usuario;
 import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
 import smail.sistema_mail_OdontoCool.repositories.EspecialidadRepository;
-import smail.sistema_mail_OdontoCool.entities.Usuario;
+import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
+import smail.sistema_mail_OdontoCool.validations.DoctorVal;
 
 @Service
 public class DoctorService {
 
     @Autowired
     private DoctorRepository doctorRepository;
+
+    @Autowired
+    private PersonaRepository personaRepository;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -35,6 +41,8 @@ public class DoctorService {
     private SmtpClientService smtpService;
     @Autowired
     private PasswordService passwordService;
+    @Autowired
+    private DoctorVal doctorVal;
 
     public void handle(String action, List<String> params, String fromEmail, List<String> imagenesBase64) {
         switch (action) {
@@ -62,23 +70,64 @@ public class DoctorService {
     private void insert(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Direccion[3], Genero[4],
-            // Telefono[5], FechaNac[6], Exp[7], Matricula[8], CORREO[9], PASS[10],
-            if (params.size() < 11) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para Doctor. Se requieren 11.");
+            // Telefono[5], FechaNac[6], Exp[7], Matricula[8], TelfProf[9], CORREO[10],
+            // PASS[11],
+            if (params.size() < 12) {
+                sendResponse(fromEmail, "Error", "Faltan parámetros para Doctor. Se requieren 12.");
                 return;
             }
 
-            Doctor d = new Doctor();
-            d.setCi(params.get(0));
-            d.setNombres(params.get(1));
-            d.setApellidos(params.get(2));
-            d.setDireccion(params.get(3));
-            d.setGenero(params.get(4));
-            d.setTelefono(params.get(5));
-            d.setFechaNacimiento(LocalDate.parse(params.get(6)));
+            String validationMsg = doctorVal.insertValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error", validationMsg);
+                return;
+            }
 
+            String ci = params.get(0);
+            String nombres = params.get(1);
+            String apellidos = params.get(2);
+            String direccion = params.get(3);
+            String genero = params.get(4);
+            String telefono = params.get(5);
+            LocalDate fechaNac = LocalDate.parse(params.get(6).replace('/', '-'));
+
+            Persona persona = personaRepository.findById(ci).orElse(null);
+            if (persona != null) {
+                // Validar que los datos de la persona coincidan con la registrada
+                if (!persona.getNombres().equalsIgnoreCase(nombres.trim()) ||
+                        !persona.getApellidos().equalsIgnoreCase(apellidos.trim()) ||
+                        !persona.getDireccion().equalsIgnoreCase(direccion.trim()) ||
+                        !persona.getGenero().equalsIgnoreCase(genero.trim()) ||
+                        !persona.getTelefono().equalsIgnoreCase(telefono.trim()) ||
+                        !persona.getFechaNacimiento().equals(fechaNac)) {
+                    sendResponse(fromEmail, "Error",
+                            "La persona con CI (" + ci + ") ya existe registrada con datos distintos.");
+                    return;
+                }
+            } else {
+                persona = new Persona();
+                persona.setCi(ci);
+                persona.setNombres(nombres);
+                persona.setApellidos(apellidos);
+                persona.setDireccion(direccion);
+                persona.setGenero(genero);
+                persona.setTelefono(telefono);
+                persona.setFechaNacimiento(fechaNac);
+                persona = personaRepository.save(persona);
+            }
+
+            // Validar si ya existe este doctor
+            Doctor d = doctorRepository.findById(ci).orElse(null);
+            if (d != null) {
+                sendResponse(fromEmail, "Error", "Ya existe un doctor registrado con el CI: " + ci);
+                return;
+            }
+
+            d = new Doctor();
+            d.setPersona(persona);
             d.setTiempoExperiencia(params.get(7));
             d.setMatriculaProfesional(params.get(8));
+            d.setTelefonoProfesional(params.get(9));
             d.setFechaContratacion(LocalDate.now());
             doctorRepository.save(d);
 
@@ -88,15 +137,17 @@ public class DoctorService {
                     : "";
 
             // Convertir a base 64 y Subir a Cloudinary
-            String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
+            String fotoUrl = (imagenesBase64 != null && !imagenesBase64.isEmpty())
+                    ? cloudinaryServices.subirImagen(imagenesBase64.get(0))
+                    : "null";
 
             Usuario u = new Usuario();
-            u.setCodigoUsuario(firstLetter + d.getCi());
-            u.setCorreoElectronico(params.get(9));
-            u.setContraseña(passwordService.hashPassword(params.get(10)));
+            u.setCodigoUsuario(firstLetter + d.getCi() + "DOC");
+            u.setCorreoElectronico(params.get(10));
+            u.setContraseña(passwordService.hashPassword(params.get(11)));
             u.setFotoUrl(fotoUrl);
             u.setEstado("ACTIVO");
-            u.setPersona(d);
+            u.setPersona(persona);
             usuarioRepository.save(u);
 
             sendResponse(fromEmail, "Éxito", "Doctor(a) " + d.getNombres() + " registrado(a) correctamente.");
@@ -162,7 +213,7 @@ public class DoctorService {
         StringBuilder sb = new StringBuilder("Lista de Doctores:\n\n");
         for (Doctor d : lista) {
             sb.append(String.format(
-                    "- [%s] Dr. %s %s Direccion: %s Genero %s Telefono %s Nacimiento %s (Matrícula: %s)\n",
+                    "- [%s] Dr. %s %s Direccion: %s Genero %s Telefono %s Nacimiento %s (Matrícula: %s, Telf. Prof: %s)\n",
                     d.getCi(),
                     d.getNombres(),
                     d.getApellidos(),
@@ -170,7 +221,8 @@ public class DoctorService {
                     d.getGenero(),
                     d.getTelefono(),
                     d.getFechaNacimiento(),
-                    d.getMatriculaProfesional()));
+                    d.getMatriculaProfesional(),
+                    d.getTelefonoProfesional()));
         }
         return sb;
     }
@@ -178,6 +230,21 @@ public class DoctorService {
     @Transactional
     private void update(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
+
+            // Parámetros: CI[0], Nombres[1], Apellidos[2], Direccion[3], Genero[4],
+            // Telefono[5], FechaNac[6], Exp[7], Matricula[8], TelfProf[9], CORREO[10],
+            // PASS[11],
+            if (params.size() < 12) {
+                sendResponse(fromEmail, "Error", "Faltan parámetros para Doctor. Se requieren 12.");
+                return;
+            }
+
+            String validationMsg = doctorVal.updateValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error", validationMsg);
+                return;
+            }
+
             String ci = params.get(0);
             String nombres = params.get(1);
             String apellidos = params.get(2);
@@ -187,8 +254,9 @@ public class DoctorService {
             String fechaNacimiento = params.get(6);
             String tiempoExperiencia = params.get(7);
             String matriculaProfesional = params.get(8);
-            String correoElectronico = params.get(9);
-            String contraseña = params.get(10);
+            String telefonoProfesional = params.get(9);
+            String correoElectronico = params.get(10);
+            String contraseña = params.get(11);
 
             Doctor d = doctorRepository.findById(ci).orElse(null);
             if (d == null) {
@@ -203,6 +271,7 @@ public class DoctorService {
             d.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
             d.setTiempoExperiencia(tiempoExperiencia);
             d.setMatriculaProfesional(matriculaProfesional);
+            d.setTelefonoProfesional(telefonoProfesional);
             doctorRepository.save(d);
 
             Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);

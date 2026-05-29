@@ -5,14 +5,11 @@ import java.time.LocalDate;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "personas")
-@Inheritance(strategy = InheritanceType.JOINED)//esto es para que se cree una tabla por cada clase hija, y se relacionen con la tabla padre
 public class Persona {
 
     @Id

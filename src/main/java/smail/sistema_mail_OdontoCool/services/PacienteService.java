@@ -4,9 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Paciente;
+import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
 import smail.sistema_mail_OdontoCool.repositories.PacienteRepository;
+import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
+import smail.sistema_mail_OdontoCool.validations.PacienteVal;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -19,6 +22,9 @@ public class PacienteService {
     private PacienteRepository pacienteRepository;
 
     @Autowired
+    private PersonaRepository personaRepository;
+
+    @Autowired
     private UsuarioRepository usuarioRepository;
 
     @Autowired
@@ -28,6 +34,8 @@ public class PacienteService {
     private SmtpClientService smtpService;
     @Autowired
     private PasswordService passwordService;
+    @Autowired
+    private PacienteVal pacienteVal;
 
     public void handle(String action, List<String> params, String fromEmail, List<String> imagenesBase64) {
         switch (action) {
@@ -57,15 +65,55 @@ public class PacienteService {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para Paciente. Se requieren 11.");
                 return;
             }
-            Paciente pac = new Paciente();
-            pac.setCi(params.get(0));
-            pac.setNombres(params.get(1));
-            pac.setApellidos(params.get(2));
-            pac.setDireccion(params.get(3));
-            pac.setGenero(params.get(4));
-            pac.setTelefono(params.get(5));
-            pac.setFechaNacimiento(LocalDate.parse(params.get(6)));
 
+            String validationMsg = pacienteVal.insertValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error", validationMsg);
+                return;
+            }
+
+            String ci = params.get(0);
+            String nombres = params.get(1);
+            String apellidos = params.get(2);
+            String direccion = params.get(3);
+            String genero = params.get(4);
+            String telefono = params.get(5);
+            LocalDate fechaNac = LocalDate.parse(params.get(6).replace('/', '-'));
+
+            Persona persona = personaRepository.findById(ci).orElse(null);
+            if (persona != null) {
+                // Validar que los datos de la persona coincidan con la registrada
+                if (!persona.getNombres().equalsIgnoreCase(nombres.trim()) ||
+                        !persona.getApellidos().equalsIgnoreCase(apellidos.trim()) ||
+                        !persona.getDireccion().equalsIgnoreCase(direccion.trim()) ||
+                        !persona.getGenero().equalsIgnoreCase(genero.trim()) ||
+                        !persona.getTelefono().equalsIgnoreCase(telefono.trim()) ||
+                        !persona.getFechaNacimiento().equals(fechaNac)) {
+                    sendResponse(fromEmail, "Error",
+                            "La persona con CI (" + ci + ") ya existe registrada con datos distintos.");
+                    return;
+                }
+            } else {
+                persona = new Persona();
+                persona.setCi(ci);
+                persona.setNombres(nombres);
+                persona.setApellidos(apellidos);
+                persona.setDireccion(direccion);
+                persona.setGenero(genero);
+                persona.setTelefono(telefono);
+                persona.setFechaNacimiento(fechaNac);
+                persona = personaRepository.save(persona);
+            }
+
+            // Validar si ya existe este paciente
+            Paciente pac = pacienteRepository.findById(ci).orElse(null);
+            if (pac != null) {
+                sendResponse(fromEmail, "Error", "Ya existe un paciente registrado con el CI: " + ci);
+                return;
+            }
+
+            pac = new Paciente();
+            pac.setPersona(persona);
             pac.setNombreContactoEmergencia(params.get(7));
             pac.setTelefonoEmergencia(params.get(8));
             pacienteRepository.save(pac);
@@ -74,16 +122,17 @@ public class PacienteService {
                     ? pac.getApellidos().trim().substring(0, 1).toUpperCase()
                     : "";
 
-            String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
+            String fotoUrl = (imagenesBase64 != null && !imagenesBase64.isEmpty())
+                    ? cloudinaryServices.subirImagen(imagenesBase64.get(0))
+                    : "null";
 
             Usuario u = new Usuario();
-
-            u.setCodigoUsuario(firstLetter + pac.getCi());
+            u.setCodigoUsuario(firstLetter + pac.getCi() + "PAC");
             u.setCorreoElectronico(params.get(9));
             u.setContraseña(passwordService.hashPassword(params.get(10)));
             u.setFotoUrl(fotoUrl);
             u.setEstado("ACTIVO");
-            u.setPersona(pac);
+            u.setPersona(persona);
             usuarioRepository.save(u);
 
             sendResponse(fromEmail, "Éxito", "Paciente " + pac.getNombres() + " registrado correctamente.");
@@ -137,6 +186,20 @@ public class PacienteService {
     @Transactional
     private void update(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
+
+            // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
+            // FNac[6], ContactoEmerg[7], TelfEmerg[8], CORREO[9], PASS[10]
+            if (params.size() < 11) {
+                sendResponse(fromEmail, "Error", "Faltan parámetros para Paciente. Se requieren 11.");
+                return;
+            }
+
+            String validationMsg = pacienteVal.updateValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error", validationMsg);
+                return;
+            }
+
             String ci = params.get(0);
             String nombres = params.get(1);
             String apellidos = params.get(2);

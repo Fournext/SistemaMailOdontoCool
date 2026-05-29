@@ -3,10 +3,13 @@ package smail.sistema_mail_OdontoCool.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Propietario;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
+import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.PropietarioRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
+import smail.sistema_mail_OdontoCool.validations.PropietarioVal;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -20,6 +23,9 @@ public class PropietarioService {
     private PropietarioRepository propietarioRepository;
 
     @Autowired
+    private PersonaRepository personaRepository;
+
+    @Autowired
     private UsuarioRepository usuarioRepository;
 
     @Autowired
@@ -28,6 +34,8 @@ public class PropietarioService {
     private SmtpClientService smtpService;
     @Autowired
     private PasswordService passwordService;
+    @Autowired
+    private PropietarioVal propietarioVal;
 
     public void handle(String action, List<String> params, String fromEmail, List<String> imagenesBase64) {
         switch (action) {
@@ -58,30 +66,64 @@ public class PropietarioService {
                 return;
             }
 
-            Propietario prop = new Propietario();
-            prop.setCi(params.get(0));
-            prop.setNombres(params.get(1));
-            prop.setApellidos(params.get(2));
-            prop.setDireccion(params.get(3));
-            prop.setGenero(params.get(4));
-            prop.setTelefono(params.get(5));
-            prop.setFechaNacimiento(LocalDate.parse(params.get(6)));
+            String validationMsg = propietarioVal.insertValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error", validationMsg);
+                return;
+            }
 
+            String ci = params.get(0);
+            String nombres = params.get(1);
+            String apellidos = params.get(2);
+            String direccion = params.get(3);
+            String genero = params.get(4);
+            String telefono = params.get(5);
+            LocalDate fechaNac = LocalDate.parse(params.get(6).replace('/', '-'));
+
+            Persona persona = personaRepository.findById(ci).orElse(null);
+            if (persona != null) {
+                // Validar que los datos de la persona coincidan con la registrada
+                if (!persona.getNombres().equalsIgnoreCase(nombres.trim()) ||
+                        !persona.getApellidos().equalsIgnoreCase(apellidos.trim()) ||
+                        !persona.getDireccion().equalsIgnoreCase(direccion.trim()) ||
+                        !persona.getGenero().equalsIgnoreCase(genero.trim()) ||
+                        !persona.getTelefono().equalsIgnoreCase(telefono.trim()) ||
+                        !persona.getFechaNacimiento().equals(fechaNac)) {
+                    sendResponse(fromEmail, "Error",
+                            "La persona con CI (" + ci + ") ya existe registrada con datos distintos.");
+                    return;
+                }
+            } else {
+                persona = new Persona();
+                persona.setCi(ci);
+                persona.setNombres(nombres);
+                persona.setApellidos(apellidos);
+                persona.setDireccion(direccion);
+                persona.setGenero(genero);
+                persona.setTelefono(telefono);
+                persona.setFechaNacimiento(fechaNac);
+                persona = personaRepository.save(persona);
+            }
+
+            Propietario prop = new Propietario();
+            prop.setPersona(persona);
             prop.setPorcentajeParticipacion(new BigDecimal(params.get(7)));
             propietarioRepository.save(prop);
 
             String firstLetter = (prop.getApellidos() != null && !prop.getApellidos().trim().isEmpty())
                     ? prop.getApellidos().trim().substring(0, 1).toUpperCase()
                     : "";
-            String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
+            String fotoUrl = (imagenesBase64 != null && !imagenesBase64.isEmpty())
+                    ? cloudinaryServices.subirImagen(imagenesBase64.get(0))
+                    : "null";
 
             Usuario u = new Usuario();
-            u.setCodigoUsuario(firstLetter + prop.getCi());
+            u.setCodigoUsuario(firstLetter + prop.getCi() + "PRP");
             u.setCorreoElectronico(params.get(8));
             u.setContraseña(passwordService.hashPassword(params.get(9)));
             u.setFotoUrl(fotoUrl);
             u.setEstado("ACTIVO");
-            u.setPersona(prop);
+            u.setPersona(persona);
             usuarioRepository.save(u);
 
             sendResponse(fromEmail, "Éxito", "Propietario(a) " + prop.getNombres() + " registrado(a) correctamente.");
@@ -132,7 +174,26 @@ public class PropietarioService {
     @Transactional
     private void update(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
-            String ci = params.get(0);
+
+            // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
+            // FNac[6], Porcentaje[7], EMAIL[8], PASSWORD[9]
+            if (params.size() < 10) {
+                sendResponse(fromEmail, "Error", "Faltan parámetros para Propietario. Se requieren 10.");
+                return;
+            }
+
+            String ci = params.size() > 0 ? params.get(0) : "";
+            if (ci.trim().isEmpty()) {
+                sendResponse(fromEmail, "Error", "El CI del propietario es requerido para actualizar.");
+                return;
+            }
+
+            String validationMsg = propietarioVal.updateValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error", validationMsg);
+                return;
+            }
+
             String nombres = params.get(1);
             String apellidos = params.get(2);
             String direccion = params.get(3);
@@ -144,17 +205,27 @@ public class PropietarioService {
             String contraseña = params.get(9);
 
             Propietario prop = propietarioRepository.findById(ci).orElse(null);
-            if (prop == null) {
-                sendResponse(fromEmail, "Error", "Propietario no encontrado.");
-                return;
+            if (nombres != null && !nombres.trim().isEmpty()) {
+                prop.setNombres(nombres);
             }
-            prop.setNombres(nombres);
-            prop.setApellidos(apellidos);
-            prop.setDireccion(direccion);
-            prop.setGenero(genero);
-            prop.setTelefono(telefono);
-            prop.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
-            prop.setPorcentajeParticipacion(new BigDecimal(porcentaje));
+            if (apellidos != null && !apellidos.trim().isEmpty()) {
+                prop.setApellidos(apellidos);
+            }
+            if (direccion != null && !direccion.trim().isEmpty()) {
+                prop.setDireccion(direccion);
+            }
+            if (genero != null && !genero.trim().isEmpty()) {
+                prop.setGenero(genero);
+            }
+            if (telefono != null && !telefono.trim().isEmpty()) {
+                prop.setTelefono(telefono);
+            }
+            if (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty()) {
+                prop.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
+            }
+            if (porcentaje != null && !porcentaje.trim().isEmpty()) {
+                prop.setPorcentajeParticipacion(new BigDecimal(porcentaje));
+            }
             propietarioRepository.save(prop);
 
             Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
@@ -162,15 +233,19 @@ public class PropietarioService {
                 sendResponse(fromEmail, "Error", "Usuario no encontrado.");
                 return;
             }
-            u.setCorreoElectronico(correoElectronico);
-            u.setContraseña(passwordService.hashPassword(contraseña));
+            if (correoElectronico != null && !correoElectronico.trim().isEmpty()) {
+                u.setCorreoElectronico(correoElectronico);
+            }
+            if (contraseña != null && !contraseña.trim().isEmpty()) {
+                u.setContraseña(passwordService.hashPassword(contraseña));
+            }
             if (imagenesBase64 != null && !imagenesBase64.isEmpty()) {
                 String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
                 u.setFotoUrl(fotoUrl);
             }
             usuarioRepository.save(u);
 
-            sendResponse(fromEmail, "Éxito", "Propietario(a) " + nombres + " actualizado(a) correctamente.");
+            sendResponse(fromEmail, "Éxito", "Propietario(a) " + prop.getNombres() + " actualizado(a) correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo actualizar propietario: " + e.getMessage());
         }

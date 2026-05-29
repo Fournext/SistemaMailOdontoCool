@@ -9,8 +9,14 @@ import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import smail.sistema_mail_OdontoCool.entities.Usuario;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
+
 @Service
 public class CommandProcessorService {
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
     private DoctorService doctorService;
@@ -26,6 +32,15 @@ public class CommandProcessorService {
 
     @Autowired
     private EspecialidadService especialidadService;
+
+    @Autowired
+    private HistorialClinicoService historialClinicoService;
+
+    @Autowired
+    private CitaServices citaServices;
+
+    @Autowired
+    private EstadoCitaServices estadoCitaServices;
 
     @Autowired
     private HelpService helpService;
@@ -49,12 +64,17 @@ public class CommandProcessorService {
                 String paramsRaw = (matcher.group(2) != null) ? matcher.group(2) : "";
                 List<String> params = parseParams(paramsRaw);
 
+                if (!existUserSistem(fromEmail)) {
+                    helpService.sendHelp(fromEmail, "Usuario no registrado en el sistema.");
+                    return;
+                }
+
                 routeToEntityService(fullCommand, params, fromEmail, imagenesBase64);
             } else {
                 sendResponse(fromEmail, "Error de Formato",
                         "El formato del asunto es inválido.\n"
-                        + "Recibido: [" + cleanSubject + "]\n"
-                        + "Asegúrate de que no tenga prefijos como 'Re:' o 'Fwd:'");
+                                + "Recibido: [" + cleanSubject + "]\n"
+                                + "Asegúrate de que no tenga prefijos como 'Re:' o 'Fwd:'");
             }
         } catch (Exception e) {
             sendResponse(fromEmail, "Error Crítico", "Error al procesar: " + e.getMessage());
@@ -64,7 +84,7 @@ public class CommandProcessorService {
     private void routeToEntityService(String fullCommand, List<String> params, String fromEmail,
             List<String> imagenesBase64) {
         if (fullCommand.equals("HELP")) {
-            helpService.sendHelp(fromEmail);
+            helpService.sendHelp(fromEmail, "");
             return;
         }
 
@@ -92,6 +112,15 @@ public class CommandProcessorService {
             case "ESP":
                 especialidadService.handle(action, params, fromEmail);
                 break;
+            case "HIS":
+                historialClinicoService.handle(action, params, fromEmail);
+                break;
+            case "CIT":
+                citaServices.handle(action, params, fromEmail);
+                break;
+            case "ECI":
+                estadoCitaServices.handle(action, params, fromEmail);
+                break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);
         }
@@ -109,6 +138,15 @@ public class CommandProcessorService {
             params.add(s.replace("\"", "").trim());
         }
         return params;
+    }
+
+    private boolean existUserSistem(String fromEmail) {
+        Usuario user = usuarioRepository.findByCorreoElectronico(fromEmail);
+
+        if (user == null) {
+            return false;
+        }
+        return true;
     }
 
     private void sendResponse(String to, String subject, String body) {
