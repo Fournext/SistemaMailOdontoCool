@@ -43,6 +43,9 @@ public class CommandProcessorService {
     private EstadoCitaServices estadoCitaServices;
 
     @Autowired
+    private AntecedenteOdontologicoServices antecedenteOdontologicoServices;
+
+    @Autowired
     private HelpService helpService;
 
     @Autowired
@@ -120,6 +123,9 @@ public class CommandProcessorService {
                 break;
             case "ECI":
                 estadoCitaServices.handle(action, params, fromEmail);
+                break;
+            case "AOD":
+                antecedenteOdontologicoServices.handle(action, params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);
