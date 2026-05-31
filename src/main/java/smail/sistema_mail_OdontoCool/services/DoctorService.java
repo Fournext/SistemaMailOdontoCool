@@ -11,9 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import smail.sistema_mail_OdontoCool.entities.Doctor;
 import smail.sistema_mail_OdontoCool.entities.Especialidad;
+import smail.sistema_mail_OdontoCool.entities.Usuario;
 import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
 import smail.sistema_mail_OdontoCool.repositories.EspecialidadRepository;
-import smail.sistema_mail_OdontoCool.entities.Usuario;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
@@ -122,7 +122,7 @@ public class DoctorService {
             Especialidad especialidad = especialidadRepository.findById(especialidadId)
                     .orElseThrow(() -> new RuntimeException("Especialidad no encontrada"));
 
-            doctor.getEspecialidades().add(especialidad);
+            doctor.addEspecialidad(especialidad);
             doctorRepository.save(doctor);
 
             sendResponse(fromEmail, "Éxito", "Especialidad asignada correctamente al doctor.");
@@ -148,7 +148,6 @@ public class DoctorService {
                     default:
                         sendResponse(fromEmail, "Error", "Listado no permitido para Doctores.");
                 }
-
             }
 
             sendResponse(fromEmail, "Listado de Doctores", sb.toString());

@@ -1,16 +1,17 @@
 package smail.sistema_mail_OdontoCool.services;
 
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import smail.sistema_mail_OdontoCool.entities.Secretaria;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
 import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.List;
 
 @Service
 public class SecretariaService {

@@ -8,8 +8,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class SistemaMailOdontoCoolApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(SistemaMailOdontoCoolApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(SistemaMailOdontoCoolApplication.class, args);
+    }
 
 }
