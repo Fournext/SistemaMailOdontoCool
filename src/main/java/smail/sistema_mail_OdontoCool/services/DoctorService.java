@@ -173,7 +173,7 @@ public class DoctorService {
             Especialidad especialidad = especialidadRepository.findById(especialidadId)
                     .orElseThrow(() -> new RuntimeException("Especialidad no encontrada"));
 
-            doctor.getEspecialidades().add(especialidad);
+            doctor.addEspecialidad(especialidad);
             doctorRepository.save(doctor);
 
             sendResponse(fromEmail, "Éxito", "Especialidad asignada correctamente al doctor.");
@@ -199,7 +199,6 @@ public class DoctorService {
                     default:
                         sendResponse(fromEmail, "Error", "Listado no permitido para Doctores.");
                 }
-
             }
 
             sendResponse(fromEmail, "Listado de Doctores", sb.toString());

@@ -2,7 +2,6 @@ package smail.sistema_mail_OdontoCool.entities;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,9 +16,9 @@ import jakarta.persistence.Table;
 public class Especialidad {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @Column(name = "nombre", nullable = false, unique = true)
     private String nombre;
@@ -43,7 +42,7 @@ public class Especialidad {
     }
 
     //Getters y Setters
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 

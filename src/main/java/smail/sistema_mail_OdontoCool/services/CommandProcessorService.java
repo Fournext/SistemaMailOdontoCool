@@ -46,6 +46,15 @@ public class CommandProcessorService {
     private AntecedenteOdontologicoServices antecedenteOdontologicoServices;
 
     @Autowired
+    private TurnoService turnoService;
+
+    @Autowired
+    private AsignacionTurnoDoctorService AsignacionTurnoDoctorService;
+
+    @Autowired
+    private AsignacionTurnoSecretariaService AsignacionTurnoSecretariaService;
+
+    @Autowired
     private HelpService helpService;
 
     @Autowired
@@ -126,6 +135,20 @@ public class CommandProcessorService {
                 break;
             case "AOD":
                 antecedenteOdontologicoServices.handle(action, params, fromEmail);
+                break;
+            case "TUR":
+                // El servicio de Turnos no maneja imágenes, por lo que se pasa una lista vacía
+                turnoService.handle(action, params, fromEmail);
+                break;
+            case "ATD":
+                // El servicio de Asignación de Turnos a Doctores no maneja imágenes, por lo que
+                // se pasa una lista vacía
+                AsignacionTurnoDoctorService.handle(action, params, fromEmail);
+                break;
+            case "ATS":
+                // El servicio de Asignación de Turnos a Secretarias no maneja imágenes, por lo
+                // que se pasa una lista vacía
+                AsignacionTurnoSecretariaService.handle(action, params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);

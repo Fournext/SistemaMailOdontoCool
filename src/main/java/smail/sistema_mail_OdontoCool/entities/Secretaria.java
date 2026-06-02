@@ -1,9 +1,14 @@
 package smail.sistema_mail_OdontoCool.entities;
 
-import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "secretarias")
@@ -23,6 +28,9 @@ public class Secretaria {
 
     @OneToMany(mappedBy = "secretaria")
     private List<Cita> citas = new ArrayList<>();
+
+    @OneToMany(mappedBy = "secretaria")
+    private Set<AsignacionTurnoSecretaria> asignacionesSecretaria = new HashSet<>();
 
     public Secretaria() {
     }
@@ -143,4 +151,18 @@ public class Secretaria {
     public void setCitas(List<Cita> citas) {
         this.citas = citas;
     }
+
+    public Set<AsignacionTurnoSecretaria> getAsignacionesSecretaria() {
+        return asignacionesSecretaria;
+    }
+
+    public void setAsignacionesSecretaria(Set<AsignacionTurnoSecretaria> asignacionesSecretaria) {
+        this.asignacionesSecretaria = asignacionesSecretaria;
+    }
+
+    public void addAsignacionSecretaria(AsignacionTurnoSecretaria asignacion) {
+        this.asignacionesSecretaria.add(asignacion);
+        asignacion.setSecretaria(this);
+    }
+
 }

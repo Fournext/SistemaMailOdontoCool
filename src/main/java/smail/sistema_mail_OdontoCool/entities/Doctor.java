@@ -4,7 +4,15 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "doctores")
@@ -31,11 +39,11 @@ public class Doctor {
     @Column(name = "telefono_profesional")
     private String telefonoProfesional;
 
+    @OneToMany(mappedBy = "doctor")
+    private Set<AsignacionTurnoDoctor> asignacionesDoctor = new HashSet<>();
+
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "doctor_especialidad",
-            joinColumns = @JoinColumn(name = "doctor_ci"),
-            inverseJoinColumns = @JoinColumn(name = "especialidad_id")
-    )
+    @JoinTable(name = "doctor_especialidad", joinColumns = @JoinColumn(name = "doctor_ci"), inverseJoinColumns = @JoinColumn(name = "especialidad_id"))
     private Set<Especialidad> especialidades = new HashSet<>();
 
     public Doctor() {
@@ -181,4 +189,23 @@ public class Doctor {
     public void setTelefonoProfesional(String telefonoProfesional) {
         this.telefonoProfesional = telefonoProfesional;
     }
+
+    public Set<AsignacionTurnoDoctor> getAsignacionesDoctor() {
+        return asignacionesDoctor;
+    }
+
+    public void setAsignacionesDoctor(Set<AsignacionTurnoDoctor> asignacionesDoctor) {
+        this.asignacionesDoctor = asignacionesDoctor;
+    }
+
+    public void addEspecialidad(Especialidad especialidad) {
+        this.especialidades.add(especialidad);
+        especialidad.getDoctores().add(this);
+    }
+
+    public void addAsignacionDoctor(AsignacionTurnoDoctor asignacion) {
+        this.asignacionesDoctor.add(asignacion);
+        asignacion.setDoctor(this);
+    }
+
 }
