@@ -8,14 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
-import smail.sistema_mail_OdontoCool.entities.AsignacionTurnoDoctor;
+
 import smail.sistema_mail_OdontoCool.entities.AsignacionTurnoSecretaria;
-import smail.sistema_mail_OdontoCool.entities.Doctor;
+
 import smail.sistema_mail_OdontoCool.entities.Secretaria;
 import smail.sistema_mail_OdontoCool.entities.Turno;
-import smail.sistema_mail_OdontoCool.repositories.AsignacionTurnoDoctorRepository;
+
 import smail.sistema_mail_OdontoCool.repositories.AsignacionTurnoSecretariaRepository;
-import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
 import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
 import smail.sistema_mail_OdontoCool.repositories.TurnoRepository;
 
@@ -74,7 +73,8 @@ public class AsignacionTurnoSecretariaService {
             atd.setTurno(turno);
             AsignacionTurnoSecretariaRepository.save(atd);
 
-            sendResponse(fromEmail, "Éxito", "Turno asignado a " + atd.getSecretaria().getNombres() + " correctamente.");
+            sendResponse(fromEmail, "Éxito",
+                    "Turno asignado a " + atd.getSecretaria().getNombres() + " correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo asignar turno a secretaria: " + e.getMessage());
         }
@@ -101,7 +101,8 @@ public class AsignacionTurnoSecretariaService {
             sendResponse(fromEmail, "Listado de Asignaciones de Turnos a secretarias", sb.toString());
 
         } catch (Exception e) {
-            sendResponse(fromEmail, "Error", "No se pudo listar asignaciones de turnos a secretarias: " + e.getMessage());
+            sendResponse(fromEmail, "Error",
+                    "No se pudo listar asignaciones de turnos a secretarias: " + e.getMessage());
         }
     }
 
@@ -125,7 +126,8 @@ public class AsignacionTurnoSecretariaService {
     private void update(List<String> params, String fromEmail) {
         try {
             if (params.size() < 7) {
-                sendResponse(fromEmail, "Error", "Parámetros insuficientes para modificar asignación de turno a secretaria.");
+                sendResponse(fromEmail, "Error",
+                        "Parámetros insuficientes para modificar asignación de turno a secretaria.");
                 return;
             }
 
@@ -172,10 +174,12 @@ public class AsignacionTurnoSecretariaService {
                 atd.setTurno(turno);
             }
             AsignacionTurnoSecretariaRepository.save(atd);
-            sendResponse(fromEmail, "Asignación de Turno a Secretaria Actualizada", "La asignación de turno a secretaria ha sido actualizada correctamente.");
+            sendResponse(fromEmail, "Asignación de Turno a Secretaria Actualizada",
+                    "La asignación de turno a secretaria ha sido actualizada correctamente.");
 
         } catch (Exception e) {
-            sendResponse(fromEmail, "Error", "No se pudo modificar asignación de turno a secretaria: " + e.getMessage());
+            sendResponse(fromEmail, "Error",
+                    "No se pudo modificar asignación de turno a secretaria: " + e.getMessage());
         }
     }
 

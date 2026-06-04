@@ -15,10 +15,6 @@ import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.SecretariaVal;
 
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.List;
-
 @Service
 public class SecretariaService {
 
