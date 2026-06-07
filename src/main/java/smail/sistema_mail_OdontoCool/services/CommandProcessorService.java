@@ -205,7 +205,7 @@ public class CommandProcessorService {
     }
 
     private boolean existUserSistem(String fromEmail) {
-        Usuario user = usuarioRepository.findByCorreoElectronico(fromEmail);
+        Usuario user = usuarioRepository.findFirstByCorreoElectronico(fromEmail);
 
         if (user == null) {
             return false;

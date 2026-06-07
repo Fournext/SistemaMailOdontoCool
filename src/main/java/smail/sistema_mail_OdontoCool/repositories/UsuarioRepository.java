@@ -12,7 +12,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     public Usuario findByCodigoUsuario(String codigoUsuario);
 
-    public Usuario findByCorreoElectronico(String correoElectronico);
+    public Usuario findFirstByCorreoElectronico(String correoElectronico);
 
     Optional<Usuario> findByPersona_Ci(String ci);
 }
