@@ -60,6 +60,18 @@ public class CommandProcessorService {
     @Autowired
     private SmtpClientService smtpService;
 
+    @Autowired
+    private ServicioService ServicioService;
+
+    @Autowired
+    private PrecioService PrecioService;
+    @Autowired
+    private AsignacionPrecioService AsignacionPrecioService;
+    @Autowired
+    private ServicioPrestadoService ServicioPrestadoService;
+    @Autowired
+    private TratamientoDienteService TratamientoDienteService;
+
     // Regex mejorada: permite espacios entre el comando y los corchetes
     private static final Pattern COMMAND_PATTERN = Pattern.compile(
             "^\\s*([A-Z]+)\\s*(?:\\[\\s*(.*)\\s*\\])?\\s*$",
@@ -85,8 +97,8 @@ public class CommandProcessorService {
             } else {
                 sendResponse(fromEmail, "Error de Formato",
                         "El formato del asunto es inválido.\n"
-                                + "Recibido: [" + cleanSubject + "]\n"
-                                + "Asegúrate de que no tenga prefijos como 'Re:' o 'Fwd:'");
+                        + "Recibido: [" + cleanSubject + "]\n"
+                        + "Asegúrate de que no tenga prefijos como 'Re:' o 'Fwd:'");
             }
         } catch (Exception e) {
             sendResponse(fromEmail, "Error Crítico", "Error al procesar: " + e.getMessage());
@@ -150,8 +162,31 @@ public class CommandProcessorService {
                 // que se pasa una lista vacía
                 AsignacionTurnoSecretariaService.handle(action, params, fromEmail);
                 break;
+            case "SER":
+                // El servicio de Servicios no maneja imágenes, por lo que se pasa una lista vacía
+                ServicioService.handle(action, params, fromEmail);
+                break;
+            case "PRE":
+                // El servicio de Precios no maneja imágenes, por lo que se pasa una lista vacía
+                PrecioService.handle(action, params, fromEmail);
+                break;
+            case "APS":
+                // El servicio de Asignación de Precios a Servicios no maneja imágenes, por lo que
+                // se pasa una lista vacía
+                AsignacionPrecioService.handle(action, params, fromEmail);
+                break;
+            case "SEP":
+                // Servicios prestados no maneja imágenes, por lo que se pasa una lista vacía
+                ServicioPrestadoService.handle(action, params, fromEmail);
+                break;
+            case "TDI":
+                // El servicio de Tratamiento de Dientes no maneja imágenes, por lo que se pasa una
+                // lista vacía
+                TratamientoDienteService.handle(action, params, fromEmail);
+                break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);
+
         }
     }
 

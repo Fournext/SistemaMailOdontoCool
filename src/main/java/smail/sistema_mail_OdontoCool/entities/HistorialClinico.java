@@ -17,6 +17,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "historiales_clinicos")
 public class HistorialClinico {
+
     @Id
     @Column(name = "codigo_historial", nullable = false)
     private String codigoHistorial;
@@ -47,6 +48,9 @@ public class HistorialClinico {
 
     @OneToMany(mappedBy = "historialClinico")
     private List<Cita> citas = new ArrayList<>();
+
+    @OneToMany(mappedBy = "historialClinico")
+    private List<Tratamiento> tratamientos = new ArrayList<>();
 
     @OneToOne(optional = false)
     @JoinColumn(name = "ci_paciente", referencedColumnName = "ci", nullable = false, unique = true)
@@ -146,6 +150,25 @@ public class HistorialClinico {
 
     public void setPaciente(Paciente paciente) {
         this.paciente = paciente;
+    }
+
+    public List<Cita> getCitas() {
+        return citas;
+    }
+
+    public List<Tratamiento> getTratamientos() {
+        return tratamientos;
+
+    }
+
+    public void addCita(Cita cita) {
+        citas.add(cita);
+        cita.setHistorialClinico(this);
+    }
+
+    public void addTratamiento(Tratamiento tratamiento) {
+        tratamientos.add(tratamiento);
+        tratamiento.setHistorialClinico(this);
     }
 
 }
