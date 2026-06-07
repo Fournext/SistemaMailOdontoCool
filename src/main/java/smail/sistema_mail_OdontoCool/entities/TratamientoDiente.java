@@ -1,8 +1,6 @@
 package smail.sistema_mail_OdontoCool.entities;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,7 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -45,9 +42,6 @@ public class TratamientoDiente {
     @ManyToOne(optional = false)
     @JoinColumn(name = "diente_id", nullable = false)
     private Diente diente;
-
-    @OneToMany(mappedBy = "tratamientoDiente")
-    private Set<RecetaRecomendacion> recetasRecomendaciones= new HashSet<>();
 
     public TratamientoDiente() {
     }
@@ -118,15 +112,5 @@ public class TratamientoDiente {
     public void setDiente(Diente diente) {
         this.diente = diente;
     }
-
-    public Set<RecetaRecomendacion> getRecetasRecomendaciones() {
-        return recetasRecomendaciones;
-    }
-
-    public void setRecetasRecomendaciones(Set<RecetaRecomendacion> recetasRecomendaciones) {
-        this.recetasRecomendaciones = recetasRecomendaciones;
-    }
-
-    
 
 }

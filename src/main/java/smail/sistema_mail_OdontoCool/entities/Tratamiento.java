@@ -48,6 +48,9 @@ public class Tratamiento {
     @OneToMany(mappedBy = "tratamiento")
     private Set<TratamientoDiente> tratamientosDiente = new HashSet<TratamientoDiente>();
 
+    @OneToMany(mappedBy = "tratamiento")
+    private Set<RecetaRecomendacion> recetasRecomendaciones = new HashSet<>();
+
     public Tratamiento() {
     }
 
@@ -129,6 +132,14 @@ public class Tratamiento {
     public void addTratamientoDiente(TratamientoDiente tratamientoDiente) {
         this.tratamientosDiente.add(tratamientoDiente);
         tratamientoDiente.setTratamiento(this);
+    }
+
+    public Set<RecetaRecomendacion> getRecetasRecomendaciones() {
+        return recetasRecomendaciones;
+    }
+
+    public void setRecetasRecomendaciones(Set<RecetaRecomendacion> recetasRecomendaciones) {
+        this.recetasRecomendaciones = recetasRecomendaciones;
     }
 
 }
