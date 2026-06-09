@@ -23,7 +23,7 @@ public class Analisis {
     @Column(name = "nombre", nullable = false, unique = true)
     private String nombre;
 
-    @Column(name = "descripcion")
+    @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
     @Column(name = "estado")

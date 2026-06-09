@@ -28,7 +28,7 @@ public class Diagnostico {
     @Column(name = "tipo_diagnostico", nullable = false)
     private String tipoDiagnostico;
 
-    @Column(name = "gravedade", nullable = false)
+    @Column(name = "gravedad", nullable = false)
     private String gravedad;
 
     @Column(name = "observaciones", columnDefinition = "TEXT")

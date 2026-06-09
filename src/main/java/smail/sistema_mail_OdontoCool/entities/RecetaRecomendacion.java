@@ -82,6 +82,18 @@ public class RecetaRecomendacion {
         this.detallesRecomendacion = detallesRecomendacion;
     }
 
+    public void addDetalleRecomendacion(DetalleRecomendacion detalle) {
+        detallesRecomendacion.add(detalle);
+        detalle.setRecetaRecomendacion(this);
+    }
+
+    public void removeDetalleRecomendacion(DetalleRecomendacion detalle) {
+        detallesRecomendacion.remove(detalle);
+        detalle.setRecetaRecomendacion(null);
+    }
+
+    
+
 
     
 

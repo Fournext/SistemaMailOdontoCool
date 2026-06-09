@@ -71,6 +71,24 @@ public class CommandProcessorService {
     private ServicioPrestadoService ServicioPrestadoService;
     @Autowired
     private TratamientoDienteService TratamientoDienteService;
+    @Autowired
+    private TratamientoService TratamientoService;
+    @Autowired
+    private DienteService DienteService;
+    @Autowired
+    private AnalisisService AnalisisService;
+    @Autowired
+    private SolicitudAnalisisService SolicitudAnalisisService;
+    @Autowired
+    private ResultadoAnalisisService ResultadoAnalisisService;
+    @Autowired
+    private DiagnosticoService diagnosticoService;
+    @Autowired
+    private DetalleDiagnosticoService DetalleDiagnosticoService;
+    @Autowired
+    private DetalleRecomendacionService DetalleRecomendacionService;
+    @Autowired 
+    private RecetaRecomendacionService RecetaRecomendacionService;
 
     // Regex mejorada: permite espacios entre el comando y los corchetes
     private static final Pattern COMMAND_PATTERN = Pattern.compile(
@@ -179,10 +197,45 @@ public class CommandProcessorService {
                 // Servicios prestados no maneja imágenes, por lo que se pasa una lista vacía
                 ServicioPrestadoService.handle(action, params, fromEmail);
                 break;
+            case "TRA":
+                // El servicio de Tratamientos no maneja imágenes, por lo que se pasa una lista vacía
+                TratamientoService.handle(action, params, fromEmail);
+                break;
+            case "DNT":
+                // El servicio de Dientes no maneja imágenes, por lo que se pasa una lista vacía
+                DienteService.handle(action, params, fromEmail);
+                break;
             case "TDI":
                 // El servicio de Tratamiento de Dientes no maneja imágenes, por lo que se pasa una
                 // lista vacía
                 TratamientoDienteService.handle(action, params, fromEmail);
+                break;
+            case "ANA":
+                // El servicio de Análisis no maneja imágenes, por lo que se pasa una lista vacía
+                AnalisisService.handle(action, params, fromEmail);
+                break;
+            case "SOA":
+                // El servicio de Solicitud de Análisis no maneja imágenes, por lo que se pasa una lista vacía
+                SolicitudAnalisisService.handle(action, params, fromEmail);
+                break;
+            case "RAN":
+                // El servicio de Resultados de Análisis no maneja imágenes, por lo que se pasa una lista vacía
+                ResultadoAnalisisService.handle(action, params, fromEmail);
+                break;
+            case "DIA":
+                // El servicio de Diagnósticos no maneja imágenes, por lo que se pasa una lista vacía
+                diagnosticoService.handle(action, params, fromEmail);
+                break;
+            case "DDI":
+                // El servicio de Detalles de Diagnóstico no maneja imágenes, por lo que se pasa una lista vacía
+                DetalleDiagnosticoService.handle(action, params, fromEmail);
+                break;
+            case "REC":
+                // El servicio de Recetas/Recomendaciones no maneja imágenes, por lo que se pasa una lista vacía
+                RecetaRecomendacionService.handle(action, params, fromEmail);
+            case "DRE":
+                // El servicio de Detalles de Recomendación no maneja imágenes, por lo que se pasa una lista vacía
+                DetalleRecomendacionService.handle(action, params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);

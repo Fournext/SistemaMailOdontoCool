@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Diente;
 import smail.sistema_mail_OdontoCool.repositories.DienteRepository;
 import smail.sistema_mail_OdontoCool.repositories.TratamientoDienteRepository;
@@ -39,6 +40,7 @@ public class DienteService {
         }
     }
 
+    @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
             if (params.size() < 5) {
@@ -93,12 +95,13 @@ public class DienteService {
                         sendResponse(fromEmail, "Error", "Listado no permitido para dientes.");
                 }
             }
-            sendResponse(fromEmail, "Listado de Precios", sb.toString());
+            sendResponse(fromEmail, "Listado de Dientes", sb.toString());
         } catch (Exception e) {
-            sendResponse(fromEmail, "Error", "Error al listar precios: " + e.getMessage());
+            sendResponse(fromEmail, "Error", "Error al listar dientes: " + e.getMessage());
         }
     }
 
+    @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
             // Parámetros: id[0], nombre[1], numero[2], tipo[3], ubicacion[4], estado[5]
