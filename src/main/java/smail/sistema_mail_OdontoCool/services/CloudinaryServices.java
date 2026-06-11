@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class CloudinaryServices {
@@ -44,9 +45,11 @@ public class CloudinaryServices {
             byte[] imagenBytes = Base64.getMimeDecoder().decode(base64Imagen);
             String url = subirImagenDesdeBytes(
                     imagenBytes,
-                    "imagen_correo");
+                    "imagen_correo" + UUID.randomUUID());
             return url;
         } catch (Exception e) {
+            System.out.println("Error al subir la imagen: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

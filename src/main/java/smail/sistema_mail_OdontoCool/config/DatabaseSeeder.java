@@ -4,9 +4,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+
+import smail.sistema_mail_OdontoCool.entities.MetodoPago;
+import smail.sistema_mail_OdontoCool.entities.ModoPago;
 import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Propietario;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
+import smail.sistema_mail_OdontoCool.repositories.MetodoPagoRespository;
+import smail.sistema_mail_OdontoCool.repositories.ModoPagoRespository;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.PropietarioRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
@@ -34,6 +39,12 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     @Autowired
     private PasswordService passwordService;
+
+    @Autowired
+    private MetodoPagoRespository metodoPagoRespository;
+
+    @Autowired
+    private ModoPagoRespository modoPagoRespository;
 
     @Override
     @Transactional
@@ -84,5 +95,35 @@ public class DatabaseSeeder implements CommandLineRunner {
         } else {
             System.out.println("====== SEED: El propietario con CI 9999999 ya existe. Omitiendo... ======");
         }
+
+        // Verificar si los metodos de pago ya existen
+        if (!metodoPagoRespository.existsByNombre("Efectivo")) {
+            MetodoPago metodoPago = new MetodoPago();
+            metodoPago.setNombre("Efectivo");
+            metodoPagoRespository.save(metodoPago);
+        }
+
+        if (!metodoPagoRespository.existsByNombre("QR")) {
+            MetodoPago metodoPago = new MetodoPago();
+            metodoPago.setNombre("QR");
+            metodoPagoRespository.save(metodoPago);
+        }
+
+        System.out.println("====== SEED EXITOSO: Metodos de pago cargados ======");
+
+        // Verificar si los modos de pago existen
+        if (!modoPagoRespository.existsByNombre("Crédito")) {
+            ModoPago modoPago = new ModoPago();
+            modoPago.setNombre("Crédito");
+            modoPagoRespository.save(modoPago);
+        }
+
+        if (!modoPagoRespository.existsByNombre("Contado")) {
+            ModoPago modoPago = new ModoPago();
+            modoPago.setNombre("Contado");
+            modoPagoRespository.save(modoPago);
+        }
+
+        System.out.println("====== SEED EXITOSO: Modos de pago cargados ======");
     }
 }

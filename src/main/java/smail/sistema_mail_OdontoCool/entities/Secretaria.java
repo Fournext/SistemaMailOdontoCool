@@ -38,6 +38,9 @@ public class Secretaria {
     @OneToMany(mappedBy = "secretaria")
     private Set<AsignacionTurnoSecretaria> asignacionesSecretaria = new HashSet<>();
 
+    @OneToMany(mappedBy = "secretaria")
+    private List<BoletaPago> boletaPagos = new ArrayList<>();
+
     public Secretaria() {
     }
 

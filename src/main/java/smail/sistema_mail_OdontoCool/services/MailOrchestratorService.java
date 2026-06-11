@@ -40,7 +40,7 @@ public class MailOrchestratorService {
                 commandProcessor.process(email.subject, email.from, email.imagenesBase64);
 
                 // Eliminar correo después de procesar para no repetirlo
-                pop3Service.deleteMessage(email.id);
+                pop3Service.deleteMessage(email.uid);
             }
 
         } catch (IOException e) {

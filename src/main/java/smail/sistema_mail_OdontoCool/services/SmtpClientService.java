@@ -27,7 +27,7 @@ public class SmtpClientService {
     @Value("${mail.smtp.ssl:false}")
     private boolean useSsl;
 
-    public void sendEmail(String to, String subject, String body) throws IOException {
+    public void sendEmail(String to, String subject, String body, String... base64Image) throws IOException {
         Socket rawSocket = new Socket(host, port);
         BufferedReader reader = new BufferedReader(new InputStreamReader(rawSocket.getInputStream()));
         PrintWriter writer = new PrintWriter(rawSocket.getOutputStream(), true);
@@ -63,10 +63,46 @@ public class SmtpClientService {
             writer.print("From: " + user + "\r\n");
             writer.print("To: " + to + "\r\n");
             writer.print("Subject: " + subject + "\r\n");
-            writer.print("\r\n");
             
-            String safeBody = body.replace("\r\n", "\n").replace("\n", "\r\n");
-            writer.print(safeBody + "\r\n");
+            String imageStr = (base64Image != null && base64Image.length > 0) ? base64Image[0] : null;
+
+            if (imageStr != null && !imageStr.trim().isEmpty()) {
+                String boundary = "OuterBoundary_" + System.currentTimeMillis();
+                writer.print("MIME-Version: 1.0\r\n");
+                writer.print("Content-Type: multipart/mixed; boundary=\"" + boundary + "\"\r\n");
+                writer.print("\r\n");
+
+                // Cuerpo de texto
+                writer.print("--" + boundary + "\r\n");
+                writer.print("Content-Type: text/plain; charset=UTF-8\r\n");
+                writer.print("Content-Transfer-Encoding: 8bit\r\n");
+                writer.print("\r\n");
+                String safeBody = body.replace("\r\n", "\n").replace("\n", "\r\n");
+                writer.print(safeBody + "\r\n");
+                writer.print("\r\n");
+
+                // Imagen adjunta
+                String cleanBase64 = imageStr.trim();
+                if (cleanBase64.startsWith("data:image")) {
+                    int commaIndex = cleanBase64.indexOf(",");
+                    if (commaIndex != -1) {
+                        cleanBase64 = cleanBase64.substring(commaIndex + 1);
+                    }
+                }
+                writer.print("--" + boundary + "\r\n");
+                writer.print("Content-Type: image/png; name=\"qr.png\"\r\n");
+                writer.print("Content-Transfer-Encoding: base64\r\n");
+                writer.print("Content-Disposition: attachment; filename=\"qr.png\"\r\n");
+                writer.print("\r\n");
+                writer.print(cleanBase64 + "\r\n");
+                writer.print("\r\n");
+
+                writer.print("--" + boundary + "--\r\n");
+            } else {
+                writer.print("\r\n");
+                String safeBody = body.replace("\r\n", "\n").replace("\n", "\r\n");
+                writer.print(safeBody + "\r\n");
+            }
             writer.flush();
 
             sendCommand(writer, reader, ".", "250");

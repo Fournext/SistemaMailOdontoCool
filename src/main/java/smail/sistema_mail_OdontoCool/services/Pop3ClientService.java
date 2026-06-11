@@ -37,6 +37,7 @@ public class Pop3ClientService {
         public String subject;
         public String body;
         public int id;
+        public String uid;
         public List<String> imagenesBase64 = new ArrayList<>();
 
         @Override
@@ -72,6 +73,21 @@ public class Pop3ClientService {
             for (int i = 1; i <= count; i++) {
                 EmailMessage email = retrieveMessage(writer, reader, i);
                 email.id = i;
+                
+                // Obtener UID único usando UIDL
+                try {
+                    String uidResp = sendCommand(writer, reader, "UIDL " + i);
+                    String[] parts = uidResp.split(" ");
+                    if (parts.length >= 3) {
+                        email.uid = parts[2];
+                    } else {
+                        email.uid = String.valueOf(i);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Advertencia al obtener UIDL para mensaje " + i + ": " + e.getMessage());
+                    email.uid = String.valueOf(i);
+                }
+                
                 messages.add(email);
             }
 
@@ -199,14 +215,54 @@ public class Pop3ClientService {
         return line;
     }
 
-    public void deleteMessage(int msgNum) throws IOException {
+    public void deleteMessage(String uid) throws IOException {
+        if (uid == null || uid.isEmpty()) {
+            return;
+        }
+
+        boolean isNumeric = uid.chars().allMatch(Character::isDigit);
+
         try (Socket socket = createSocket();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
             readResponse(reader);
             sendCommand(writer, reader, "USER " + user);
             sendCommand(writer, reader, "PASS " + password);
-            sendCommand(writer, reader, "DELE " + msgNum);
+
+            int targetMsgNum = -1;
+
+            if (isNumeric) {
+                targetMsgNum = Integer.parseInt(uid);
+            } else {
+                writer.print("UIDL\r\n");
+                writer.flush();
+                String response = reader.readLine();
+                if (response == null || !response.startsWith("+OK")) {
+                    throw new IOException("Error POP3 UIDL: " + response);
+                }
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.equals(".")) {
+                        break;
+                    }
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length >= 2) {
+                        String msgNumStr = parts[0];
+                        String msgUid = parts[1];
+                        if (uid.equals(msgUid)) {
+                            targetMsgNum = Integer.parseInt(msgNumStr);
+                        }
+                    }
+                }
+            }
+
+            if (targetMsgNum != -1) {
+                sendCommand(writer, reader, "DELE " + targetMsgNum);
+            } else {
+                System.out.println("No se encontró mensaje con UID: " + uid + " para eliminar.");
+            }
+
             sendCommand(writer, reader, "QUIT");
         }
     }

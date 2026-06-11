@@ -30,6 +30,9 @@ public class Paciente {
     @OneToMany(mappedBy = "paciente")
     private List<Cita> citas = new ArrayList<>();
 
+    @OneToMany(mappedBy = "paciente")
+    private List<BoletaPago> boletasPago = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
         if (fechaRegistro == null) {

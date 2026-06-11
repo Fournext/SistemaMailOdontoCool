@@ -58,6 +58,9 @@ public class CommandProcessorService {
     private HelpService helpService;
 
     @Autowired
+    private BoletaPagoService boletaPagoService;
+
+    @Autowired
     private SmtpClientService smtpService;
 
     // Regex mejorada: permite espacios entre el comando y los corchetes
@@ -149,6 +152,9 @@ public class CommandProcessorService {
                 // El servicio de Asignación de Turnos a Secretarias no maneja imágenes, por lo
                 // que se pasa una lista vacía
                 AsignacionTurnoSecretariaService.handle(action, params, fromEmail);
+                break;
+            case "BPA":
+                boletaPagoService.handle(action, params, fromEmail, imagenesBase64);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);
