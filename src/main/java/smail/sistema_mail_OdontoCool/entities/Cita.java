@@ -12,12 +12,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "citas")
 public class Cita {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_cita")
@@ -62,6 +64,12 @@ public class Cita {
     @ManyToOne(optional = false)
     @JoinColumn(name = "codigo_historial", referencedColumnName = "codigo_historial", nullable = false)
     private HistorialClinico historialClinico;
+
+    @OneToOne(mappedBy = "cita")
+    private SesionTratamiento sesionTratamiento;
+
+    @OneToOne(mappedBy = "cita")
+    private Diagnostico diagnostico;
 
     public Cita() {
     }
@@ -137,6 +145,26 @@ public class Cita {
 
     public void setHistorialClinico(HistorialClinico historialClinico) {
         this.historialClinico = historialClinico;
+    }
+
+    public SesionTratamiento getSesionTratamiento() {
+        return sesionTratamiento;
+    }
+
+    public void setSesionTratamiento(SesionTratamiento sesionTratamiento) {
+        this.sesionTratamiento = sesionTratamiento;
+    }
+
+    public List<AsignacionEstadoCita> getAsignacionesEstadoCita() {
+        return asignacionesEstadoCita;
+    }
+
+    public Diagnostico getDiagnostico() {
+        return diagnostico;
+    }
+
+    public void setDiagnostico(Diagnostico diagnostico) {
+        this.diagnostico = diagnostico;
     }
 
 }

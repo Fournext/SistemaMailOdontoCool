@@ -1,9 +1,13 @@
 package smail.sistema_mail_OdontoCool.config;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import smail.sistema_mail_OdontoCool.entities.MetodoPago;
 import smail.sistema_mail_OdontoCool.entities.ModoPago;
@@ -16,11 +20,6 @@ import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.PropietarioRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.services.PasswordService;
-
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
@@ -83,7 +82,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             if (usuarioRepository.findByPersona_Ci(propietarioCi).isEmpty()) {
                 Usuario usuario = new Usuario();
                 usuario.setCodigoUsuario(codUsuario);
-                usuario.setCorreoElectronico("sebastianzc041107@gmail.com");
+                usuario.setCorreoElectronico("biofarmfarmaciaquimica@gmail.com");
                 usuario.setContraseña(passwordService.hashPassword("admin123"));
                 usuario.setEstado("ACTIVO");
                 usuario.setFotoUrl(
