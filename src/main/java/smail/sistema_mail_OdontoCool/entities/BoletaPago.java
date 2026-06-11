@@ -38,8 +38,8 @@ public class BoletaPago {
     @JoinColumn(name = "ci_paciente", referencedColumnName = "ci", nullable = false)
     private Paciente paciente;
 
-    @OneToMany(mappedBy = "boletaPago", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DetalleBoleta> detallesBoleta;
+    @OneToMany(mappedBy = "boletaPago", cascade = CascadeType.ALL)
+    private List<ServicioPrestado> serviciosPrestados;
 
     @OneToMany(mappedBy = "boletaPago", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CuotaBoleta> cuotasBoleta;
@@ -105,12 +105,12 @@ public class BoletaPago {
         this.paciente = paciente;
     }
 
-    public List<DetalleBoleta> getDetallesBoleta() {
-        return detallesBoleta;
+    public List<ServicioPrestado> getServiciosPrestados() {
+        return serviciosPrestados;
     }
 
-    public void setDetallesBoleta(List<DetalleBoleta> detallesBoleta) {
-        this.detallesBoleta = detallesBoleta;
+    public void setServiciosPrestados(List<ServicioPrestado> serviciosPrestados) {
+        this.serviciosPrestados = serviciosPrestados;
     }
 
     public List<CuotaBoleta> getCuotasBoleta() {

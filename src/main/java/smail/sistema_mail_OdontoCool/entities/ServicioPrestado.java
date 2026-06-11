@@ -42,6 +42,10 @@ public class ServicioPrestado {
     @JoinColumn(name = "servicio_id", nullable = false)
     private Servicio servicio;
 
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "id_boleta", referencedColumnName = "id_boleta")
+    private BoletaPago boletaPago;
+
     public ServicioPrestado() {
     }
 
@@ -123,6 +127,14 @@ public class ServicioPrestado {
 
     public void setServicio(Servicio servicio) {
         this.servicio = servicio;
+    }
+
+    public BoletaPago getBoletaPago() {
+        return boletaPago;
+    }
+
+    public void setBoletaPago(BoletaPago boletaPago) {
+        this.boletaPago = boletaPago;
     }
 
 }

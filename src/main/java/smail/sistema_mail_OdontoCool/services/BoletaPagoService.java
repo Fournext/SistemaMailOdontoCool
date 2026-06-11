@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.DTO.CrearQR;
 import smail.sistema_mail_OdontoCool.DTO.RespuestaQR;
 import smail.sistema_mail_OdontoCool.DTO.RespuestaEstadoQR;
-import smail.sistema_mail_OdontoCool.entities.DetalleBoleta;
+import smail.sistema_mail_OdontoCool.entities.ServicioPrestado;
 import smail.sistema_mail_OdontoCool.entities.MetodoPago;
 import smail.sistema_mail_OdontoCool.entities.BoletaPago;
 import smail.sistema_mail_OdontoCool.entities.CuotaBoleta;
@@ -28,6 +28,7 @@ import smail.sistema_mail_OdontoCool.repositories.MetodoPagoRespository;
 import smail.sistema_mail_OdontoCool.repositories.ModoPagoRespository;
 import smail.sistema_mail_OdontoCool.repositories.PacienteRepository;
 import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
+import smail.sistema_mail_OdontoCool.repositories.ServicioPrestadoRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
@@ -59,6 +60,9 @@ public class BoletaPagoService {
 
     @Autowired
     private CuotaMultaRepository cuotaMultaRepository;
+
+    @Autowired
+    private ServicioPrestadoRepository servicioPrestadoRepository;
 
     @Autowired
     private MetodoPagoRespository metodoPagoRespository;
@@ -148,34 +152,36 @@ public class BoletaPagoService {
             boletaPago.setSecretaria(secretaria);
             boletaPago.setModoPago(modoPago);
 
-            List<DetalleBoleta> detalles = new ArrayList<>();
+            List<ServicioPrestado> serviciosPrestados = new ArrayList<>();
             String detailsRaw = params.get(1);
             double totalDetalles = 0.0;
 
             if (detailsRaw != null && !detailsRaw.trim().isEmpty()) {
                 String[] detailsArray = detailsRaw.split("\\s*\\|\\s*");
-                for (String detailStr : detailsArray) {
-                    if (detailStr.trim().isEmpty()) {
+                for (String idStr : detailsArray) {
+                    if (idStr.trim().isEmpty()) {
                         continue;
                     }
-                    String[] fields = detailStr.split("\\s*;\\s*", -1);
-                    DetalleBoleta detalle = new DetalleBoleta();
-
-                    double precioUnitario = Double.parseDouble(fields[0].trim());
-                    int cantidad = Integer.parseInt(fields[1].trim());
-                    double subtotal = precioUnitario * cantidad;
-
-                    detalle.setPrecioUnitario(precioUnitario);
-                    detalle.setCantidad(cantidad);
-                    detalle.setSubtotal(subtotal);
-                    detalle.setBoletaPago(boletaPago);
-                    detalles.add(detalle);
-
-                    totalDetalles += subtotal;
+                    try {
+                        Long spId = Long.parseLong(idStr.trim());
+                        ServicioPrestado sp = servicioPrestadoRepository.findById(spId).orElse(null);
+                        if (sp == null) {
+                            sendResponse(fromEmail, "Error", "El servicio prestado con ID " + spId + " no existe.");
+                            return;
+                        }
+                        sp.setBoletaPago(boletaPago);
+                        serviciosPrestados.add(sp);
+                        if (sp.getSubtotal() != null) {
+                            totalDetalles += sp.getSubtotal().doubleValue();
+                        }
+                    } catch (NumberFormatException e) {
+                        sendResponse(fromEmail, "Error", "ID de servicio prestado inválido: " + idStr);
+                        return;
+                    }
                 }
             }
 
-            boletaPago.setDetallesBoleta(detalles);
+            boletaPago.setServiciosPrestados(serviciosPrestados);
             boletaPago.setTotal(totalDetalles - descuento);
 
             Usuario user = usuarioRepository.findByPersona_Ci(paciente.getCi()).orElse(null);
@@ -185,6 +191,9 @@ public class BoletaPagoService {
             }
 
             boletaPagoRepository.save(boletaPago);
+            for (ServicioPrestado sp : serviciosPrestados) {
+                servicioPrestadoRepository.save(sp);
+            }
 
             // ==============================================================================
             // CREAR MAS DE UNA CUOTA SI ES AL CREDITO Y SOLO CREAR 1 CUOTA SI ES AL CONTADO
@@ -395,17 +404,26 @@ public class BoletaPagoService {
                                 : "N/A")
                         .append("\n");
 
-                // Detalles
+                // Detalles (Servicios Prestados)
                 sb.append("  Detalles:\n");
-                if (b.getDetallesBoleta() == null || b.getDetallesBoleta().isEmpty()) {
+                if (b.getServiciosPrestados() == null || b.getServiciosPrestados().isEmpty()) {
                     sb.append("    Sin detalles.\n");
                 } else {
                     int num = 1;
-                    for (DetalleBoleta d : b.getDetallesBoleta()) {
-                        sb.append("    ").append(num++).append(". Cantidad: ").append(d.getCantidad())
-                                .append(" | Precio Unit.: ").append(String.format("%.2f", d.getPrecioUnitario()))
+                    for (ServicioPrestado sp : b.getServiciosPrestados()) {
+                        String servicioNombre = sp.getServicio() != null ? sp.getServicio().getNombre()
+                                : "Servicio Desconocido";
+                        sb.append("    ").append(num++).append(". Servicio: ").append(servicioNombre)
+                                .append(" | Cantidad: ").append(sp.getCantidad())
+                                .append(" | Precio Unit.: ")
+                                .append(sp.getPrecio() != null ? String.format("%.2f", sp.getPrecio()) : "0.00")
                                 .append(" Bs")
-                                .append(" | Subtotal: ").append(String.format("%.2f", d.getSubtotal())).append(" Bs\n");
+                                .append(" | Descuento: ")
+                                .append(sp.getDescuento() != null ? String.format("%.2f", sp.getDescuento()) : "0.00")
+                                .append(" Bs")
+                                .append(" | Subtotal: ")
+                                .append(sp.getSubtotal() != null ? String.format("%.2f", sp.getSubtotal()) : "0.00")
+                                .append(" Bs\n");
                     }
                 }
 
