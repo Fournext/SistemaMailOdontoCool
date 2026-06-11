@@ -15,17 +15,13 @@ import smail.sistema_mail_OdontoCool.repositories.RecetaRecomendacionRepository;
 public class DetalleRecomendacionService {
 
     @Autowired
-    private SmtpClientService smtpClientService;
-
-    @Autowired
     private RecetaRecomendacionRepository recetaRecomendacionRepository;
 
     @Autowired
     private DetalleRecomendacionRepository detalleRecomendacionRepository;
-    
+
     @Autowired
     private SmtpClientService smtpService;
-
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -48,7 +44,8 @@ public class DetalleRecomendacionService {
 
     private void insert(List<String> params, String fromEmail) {
         try {
-            // descripcion[0], dosis[1], duracion[2], frecuencia[3], recetaRecomendacionId[4]
+            // descripcion[0], dosis[1], duracion[2], frecuencia[3],
+            // recetaRecomendacionId[4]
 
             if (params.size() < 5) {
                 sendResponse(fromEmail, "Error", "Parámetros insuficientes para insertar un detalle de recomendación.");
@@ -99,7 +96,8 @@ public class DetalleRecomendacionService {
         try {
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
             if (params.size() == 1) {
@@ -119,7 +117,8 @@ public class DetalleRecomendacionService {
 
     private void update(List<String> params, String fromEmail) {
         try {
-            // id[0], descripcion[1], dosis[2], duracion[3], frecuencia[4], recetaRecomendacionId[5]
+            // id[0], descripcion[1], dosis[2], duracion[3], frecuencia[4],
+            // recetaRecomendacionId[5]
 
             if (params.size() < 6) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar un detalle de recomendación.");
@@ -134,7 +133,8 @@ public class DetalleRecomendacionService {
             Long id = Long.parseLong(params.get(0).trim());
 
             DetalleRecomendacion detalle = detalleRecomendacionRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Detalle de recomendación con ID: " + id + " no encontrado."));
+                    .orElseThrow(
+                            () -> new RuntimeException("Detalle de recomendación con ID: " + id + " no encontrado."));
 
             String descripcion = params.get(1).trim();
             String dosis = params.get(2).trim();
@@ -162,7 +162,8 @@ public class DetalleRecomendacionService {
                 Long recetaId = Long.parseLong(recetaIdTexto);
 
                 RecetaRecomendacion receta = recetaRecomendacionRepository.findById(recetaId)
-                        .orElseThrow(() -> new RuntimeException("Receta/Recomendación no encontrada con ID: " + recetaId));
+                        .orElseThrow(
+                                () -> new RuntimeException("Receta/Recomendación no encontrada con ID: " + recetaId));
 
                 detalle.setRecetaRecomendacion(receta);
             }
@@ -173,7 +174,8 @@ public class DetalleRecomendacionService {
                     "Detalle de recomendación con ID: " + detalle.getId() + " actualizado correctamente.");
 
         } catch (NumberFormatException e) {
-            sendResponse(fromEmail, "Error", "El ID del detalle y el ID de la receta/recomendación deben ser numéricos.");
+            sendResponse(fromEmail, "Error",
+                    "El ID del detalle y el ID de la receta/recomendación deben ser numéricos.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al actualizar detalle de recomendación: " + e.getMessage());
         }
@@ -196,7 +198,8 @@ public class DetalleRecomendacionService {
         StringBuilder sb = new StringBuilder();
         sb.append("listado de Detalles de Recomendaciones\n");
         for (DetalleRecomendacion detalle : tratamientos) {
-            sb.append(String.format("- [%s] descripcion: %s dosis: %s duracion: %s frecuencia: %s\n RecetaRecomendacionID: %s\n",
+            sb.append(String.format(
+                    "- [%s] descripcion: %s dosis: %s duracion: %s frecuencia: %s\n RecetaRecomendacionID: %s\n",
                     detalle.getId(),
                     detalle.getDescripcion(),
                     detalle.getDosis(),

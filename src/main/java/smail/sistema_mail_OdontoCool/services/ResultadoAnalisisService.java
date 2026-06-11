@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import smail.sistema_mail_OdontoCool.entities.ResultadoAnalisis;
 import smail.sistema_mail_OdontoCool.entities.SolicitudAnalisis;
-import smail.sistema_mail_OdontoCool.repositories.AnalisisRepository;
 import smail.sistema_mail_OdontoCool.repositories.ResultadoAnalisisRepository;
 import smail.sistema_mail_OdontoCool.repositories.SolicitudAnalisisRepository;
 
@@ -19,8 +18,6 @@ public class ResultadoAnalisisService {
 
     @Autowired
     private ResultadoAnalisisRepository resultadoAnalisisRepository;
-    @Autowired
-    private AnalisisRepository analisisRepository;
     @Autowired
     private SolicitudAnalisisRepository solicitudAnalisisRepository;
     @Autowired
@@ -91,7 +88,8 @@ public class ResultadoAnalisisService {
             Long solicitudId = Long.parseLong(solicitudIdTexto);
 
             SolicitudAnalisis solicitud = solicitudAnalisisRepository.findById(solicitudId)
-                    .orElseThrow(() -> new RuntimeException("Solicitud de análisis no encontrada con ID: " + solicitudId));
+                    .orElseThrow(
+                            () -> new RuntimeException("Solicitud de análisis no encontrada con ID: " + solicitudId));
 
             ResultadoAnalisis resultadoAnalisis = new ResultadoAnalisis();
             resultadoAnalisis.setFechaResultado(LocalDate.parse(fechaTexto));
@@ -118,7 +116,8 @@ public class ResultadoAnalisisService {
         try {
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
             if (params.size() == 1) {
@@ -198,7 +197,8 @@ public class ResultadoAnalisisService {
                 Long solicitudId = Long.parseLong(solicitudIdTexto);
 
                 SolicitudAnalisis solicitud = solicitudAnalisisRepository.findById(solicitudId)
-                        .orElseThrow(() -> new RuntimeException("Solicitud de análisis no encontrada con ID: " + solicitudId));
+                        .orElseThrow(() -> new RuntimeException(
+                                "Solicitud de análisis no encontrada con ID: " + solicitudId));
 
                 resultadoAnalisis.setSolicitudAnalisis(solicitud);
             }
@@ -232,7 +232,8 @@ public class ResultadoAnalisisService {
         StringBuilder sb = new StringBuilder();
         sb.append("listado de Resultados de Análisis\n");
         for (ResultadoAnalisis a : resultadoAnalisis) {
-            sb.append(String.format("- [%s] fechaResultado: %s Observaciones: %s Interpretación: %s, Archivo: %s, Estado: %s\n",
+            sb.append(String.format(
+                    "- [%s] fechaResultado: %s Observaciones: %s Interpretación: %s, Archivo: %s, Estado: %s\n",
                     a.getId(),
                     a.getFechaResultado(),
                     a.getObservaciones(),

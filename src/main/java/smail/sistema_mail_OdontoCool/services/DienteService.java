@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Diente;
 import smail.sistema_mail_OdontoCool.repositories.DienteRepository;
-import smail.sistema_mail_OdontoCool.repositories.TratamientoDienteRepository;
 
 @Service
 public class DienteService {
@@ -18,8 +17,6 @@ public class DienteService {
     private SmtpClientService smtpService;
     @Autowired
     private DienteRepository dienteRepository;
-    @Autowired
-    private TratamientoDienteRepository tratamientoDienteRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -83,7 +80,8 @@ public class DienteService {
         try {
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
             if (params.size() == 1) {
