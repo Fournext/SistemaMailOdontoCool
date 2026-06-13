@@ -142,45 +142,67 @@ public class SecretariaService {
 
     private void list(List<String> params, String fromEmail) {
         try {
-            StringBuilder sb = new StringBuilder();
-            if (params.size() == 0) {
+            if (params.size() == 0 || params.get(0).trim().isEmpty()) {
                 sendResponse(fromEmail, "Error",
-                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                        "Falta especificar tipo de listado o término de búsqueda. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
-            if (params.size() == 1) {
 
-                switch (params.get(0)) {
-                    case "*":
-                        sb = listAll();
-                        break;
-                    default:
-                        sendResponse(fromEmail, "Error", "Listado no permitido para Secretarias.");
-                }
+            String query = params.get(0).trim();
+            StringBuilder sb = new StringBuilder();
+            List<Secretaria> lista;
 
+            if ("*".equals(query)) {
+                lista = secretariaRepository.findAll();
+                sb.append("Lista de Secretarias:\n\n");
+            } else {
+                lista = secretariaRepository.searchByNameOrCi(query);
+                sb.append("Resultados de búsqueda de Secretarias para '").append(query).append("':\n\n");
             }
-            sendResponse(fromEmail, "Listado de Secretarias", sb.toString());
+
+            java.util.List<String> base64Images = new java.util.ArrayList<>();
+            if (lista.isEmpty()) {
+                sb.append("No se encontraron secretarias.\n");
+            } else {
+                for (Secretaria s : lista) {
+                    String codigo = "Sin código";
+                    String email = "Sin correo";
+                    String foto = "Sin foto";
+                    Usuario u = usuarioRepository.findByPersonaCiAndSuffix(s.getCi(), "SEC").orElse(null);
+                    if (u != null) {
+                        if (u.getCodigoUsuario() != null && !u.getCodigoUsuario().trim().isEmpty()) {
+                            codigo = u.getCodigoUsuario();
+                        }
+                        if (u.getCorreoElectronico() != null && !u.getCorreoElectronico().trim().isEmpty()) {
+                            email = u.getCorreoElectronico();
+                        }
+                        if (u.getFotoUrl() != null && !u.getFotoUrl().equalsIgnoreCase("null") && !u.getFotoUrl().trim().isEmpty()) {
+                            foto = u.getFotoUrl();
+                            if (lista.size() == 1) {
+                                String b64 = descargarImagenBase64(foto);
+                                if (b64 != null) {
+                                    base64Images.add(b64);
+                                }
+                            }
+                        }
+                    }
+                    sb.append("- Secretaria:\n")
+                      .append("  * CI: ").append(s.getCi()).append("\n")
+                      .append("  * Nombre: ").append(s.getNombres()).append(" ").append(s.getApellidos()).append("\n")
+                      .append("  * Dirección: ").append(s.getDireccion() != null ? s.getDireccion() : "No especificada").append("\n")
+                      .append("  * Género: ").append(s.getGenero() != null ? s.getGenero() : "No especificado").append("\n")
+                      .append("  * Teléfono: ").append(s.getTelefono() != null ? s.getTelefono() : "No especificado").append("\n")
+                      .append("  * Fecha Nacimiento: ").append(s.getFechaNacimiento() != null ? s.getFechaNacimiento() : "No especificada").append("\n")
+                      .append("  * Fecha Contratación: ").append(s.getFechaContratacion() != null ? s.getFechaContratacion() : "No especificada").append("\n")
+                      .append("  * Usuario: ").append(codigo).append("\n")
+                      .append("  * Email: ").append(email).append("\n")
+                      .append("  * Foto: ").append(foto).append("\n\n");
+                }
+            }
+            sendResponse(fromEmail, "Listado de Secretarias", sb.toString(), base64Images.toArray(new String[0]));
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al listar secretarias: " + e.getMessage());
         }
-    }
-
-    private StringBuilder listAll() {
-        List<Secretaria> lista = secretariaRepository.findAll();
-        StringBuilder sb = new StringBuilder("Lista de Secretarias:\n\n");
-        for (Secretaria s : lista) {
-            sb.append(
-                    String.format("- [%s] %s %s Direccion: %s Genero %s Telefono %s Nacimiento %s (Contratación: %s)\n",
-                            s.getCi(),
-                            s.getNombres(),
-                            s.getApellidos(),
-                            s.getDireccion(),
-                            s.getGenero(),
-                            s.getTelefono(),
-                            s.getFechaNacimiento(),
-                            s.getFechaContratacion()));
-        }
-        return sb;
     }
 
     @Transactional
@@ -267,11 +289,32 @@ public class SecretariaService {
         }
     }
 
-    private void sendResponse(String to, String subject, String body) {
+    private void sendResponse(String to, String subject, String body, String... base64Image) {
         try {
-            smtpService.sendEmail(to, subject, body);
+            smtpService.sendEmail(to, subject, body, base64Image);
         } catch (IOException e) {
             System.err.println("Error SMTP en SecretariaService: " + e.getMessage());
+        }
+    }
+
+    private String descargarImagenBase64(String urlStr) {
+        if (urlStr == null || urlStr.trim().isEmpty() || "null".equalsIgnoreCase(urlStr.trim())) {
+            return null;
+        }
+        try {
+            java.net.URL url = java.net.URI.create(urlStr).toURL();
+            try (java.io.InputStream in = url.openStream();
+                 java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+                byte[] buffer = new byte[1024];
+                int n;
+                while (-1 != (n = in.read(buffer))) {
+                    out.write(buffer, 0, n);
+                }
+                return java.util.Base64.getEncoder().encodeToString(out.toByteArray());
+            }
+        } catch (Exception e) {
+            System.err.println("Error al descargar imagen: " + e.getMessage());
+            return null;
         }
     }
 }

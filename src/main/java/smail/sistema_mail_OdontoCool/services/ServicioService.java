@@ -33,14 +33,14 @@ public class ServicioService {
                 delete(params, fromEmail);
                 break;
             default:
-                sendResponse(fromEmail, "Error", "Acción no permitida para Doctores.");
+                sendResponse(fromEmail, "Error", "Acción no permitida para Servicios.");
         }
     }
 
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
-            //Parametros: nombre[0], descripcion[1], estado[2]
+            // Parametros: nombre[0], descripcion[1], estado[2]
             if (params.size() < 3) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para registrar un servicio.");
                 return;
@@ -62,7 +62,8 @@ public class ServicioService {
         try {
             StringBuilder sb = new StringBuilder();
             if (params.size() < 1) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
 
@@ -84,10 +85,11 @@ public class ServicioService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
-            //Parametros: id[0], nombre[1], Descripcion[2], estado[3]
+            // Parametros: id[0], nombre[1], Descripcion[2], estado[3]
             // if (params.size() < 4) {
-            //     sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar un servicio.");
-            //     return;
+            // sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar un
+            // servicio.");
+            // return;
             // }
             Long id = Long.parseLong(params.get(0));
             String nombre = params.get(1);
@@ -115,7 +117,8 @@ public class ServicioService {
         }
     }
 
-    // TODO: Implementar eliminación lógica (cambiar estado a INACTIVO) en lugar de eliminación física
+    // TODO: Implementar eliminación lógica (cambiar estado a INACTIVO) en lugar de
+    // eliminación física
     private void delete(List<String> params, String fromEmail) {
         throw new UnsupportedOperationException("Not supported yet.");
     }

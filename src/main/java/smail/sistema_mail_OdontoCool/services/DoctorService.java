@@ -184,46 +184,68 @@ public class DoctorService {
 
     private void list(List<String> params, String fromEmail) {
         try {
-            StringBuilder sb = new StringBuilder();
-            if (params.size() == 0) {
+            if (params.size() == 0 || params.get(0).trim().isEmpty()) {
                 sendResponse(fromEmail, "Error",
-                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                        "Falta especificar tipo de listado o término de búsqueda. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
-            if (params.size() == 1) {
 
-                switch (params.get(0)) {
-                    case "*":
-                        sb = listAll();
-                        break;
-                    default:
-                        sendResponse(fromEmail, "Error", "Listado no permitido para Doctores.");
-                }
+            String query = params.get(0).trim();
+            StringBuilder sb = new StringBuilder();
+            List<Doctor> lista;
+
+            if ("*".equals(query)) {
+                lista = doctorRepository.findAll();
+                sb.append("Lista de Doctores:\n\n");
+            } else {
+                lista = doctorRepository.searchByNameOrCi(query);
+                sb.append("Resultados de búsqueda de Doctores para '").append(query).append("':\n\n");
             }
 
-            sendResponse(fromEmail, "Listado de Doctores", sb.toString());
+            java.util.List<String> base64Images = new java.util.ArrayList<>();
+            if (lista.isEmpty()) {
+                sb.append("No se encontraron doctores.\n");
+            } else {
+                for (Doctor d : lista) {
+                    String codigo = "Sin código";
+                    String email = "Sin correo";
+                    String foto = "Sin foto";
+                    Usuario u = usuarioRepository.findByPersonaCiAndSuffix(d.getCi(), "DOC").orElse(null);
+                    if (u != null) {
+                        if (u.getCodigoUsuario() != null && !u.getCodigoUsuario().trim().isEmpty()) {
+                            codigo = u.getCodigoUsuario();
+                        }
+                        if (u.getCorreoElectronico() != null && !u.getCorreoElectronico().trim().isEmpty()) {
+                            email = u.getCorreoElectronico();
+                        }
+                        if (u.getFotoUrl() != null && !u.getFotoUrl().equalsIgnoreCase("null") && !u.getFotoUrl().trim().isEmpty()) {
+                            foto = u.getFotoUrl();
+                            if (lista.size() == 1) {
+                                String b64 = descargarImagenBase64(foto);
+                                if (b64 != null) {
+                                    base64Images.add(b64);
+                                }
+                            }
+                        }
+                    }
+                    sb.append("- Doctor:\n")
+                      .append("  * CI: ").append(d.getCi()).append("\n")
+                      .append("  * Nombre: Dr. ").append(d.getNombres()).append(" ").append(d.getApellidos()).append("\n")
+                      .append("  * Dirección: ").append(d.getDireccion() != null ? d.getDireccion() : "No especificada").append("\n")
+                      .append("  * Género: ").append(d.getGenero() != null ? d.getGenero() : "No especificado").append("\n")
+                      .append("  * Teléfono: ").append(d.getTelefono() != null ? d.getTelefono() : "No especificado").append("\n")
+                      .append("  * Fecha Nacimiento: ").append(d.getFechaNacimiento() != null ? d.getFechaNacimiento() : "No especificada").append("\n")
+                      .append("  * Matrícula: ").append(d.getMatriculaProfesional() != null ? d.getMatriculaProfesional() : "No especificada").append("\n")
+                      .append("  * Teléfono Prof.: ").append(d.getTelefonoProfesional() != null ? d.getTelefonoProfesional() : "No especificado").append("\n")
+                      .append("  * Usuario: ").append(codigo).append("\n")
+                      .append("  * Email: ").append(email).append("\n")
+                      .append("  * Foto: ").append(foto).append("\n\n");
+                }
+            }
+            sendResponse(fromEmail, "Listado de Doctores", sb.toString(), base64Images.toArray(new String[0]));
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al listar doctores: " + e.getMessage());
         }
-    }
-
-    private StringBuilder listAll() {
-        List<Doctor> lista = doctorRepository.findAll();
-        StringBuilder sb = new StringBuilder("Lista de Doctores:\n\n");
-        for (Doctor d : lista) {
-            sb.append(String.format(
-                    "- [%s] Dr. %s %s Direccion: %s Genero %s Telefono %s Nacimiento %s (Matrícula: %s, Telf. Prof: %s)\n",
-                    d.getCi(),
-                    d.getNombres(),
-                    d.getApellidos(),
-                    d.getDireccion(),
-                    d.getGenero(),
-                    d.getTelefono(),
-                    d.getFechaNacimiento(),
-                    d.getMatriculaProfesional(),
-                    d.getTelefonoProfesional()));
-        }
-        return sb;
     }
 
     @Transactional
@@ -315,11 +337,32 @@ public class DoctorService {
         }
     }
 
-    private void sendResponse(String to, String subject, String body) {
+    private void sendResponse(String to, String subject, String body, String... base64Image) {
         try {
-            smtpService.sendEmail(to, subject, body);
+            smtpService.sendEmail(to, subject, body, base64Image);
         } catch (IOException e) {
             System.err.println("Error SMTP: " + e.getMessage());
+        }
+    }
+
+    private String descargarImagenBase64(String urlStr) {
+        if (urlStr == null || urlStr.trim().isEmpty() || "null".equalsIgnoreCase(urlStr.trim())) {
+            return null;
+        }
+        try {
+            java.net.URL url = java.net.URI.create(urlStr).toURL();
+            try (java.io.InputStream in = url.openStream();
+                 java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+                byte[] buffer = new byte[1024];
+                int n;
+                while (-1 != (n = in.read(buffer))) {
+                    out.write(buffer, 0, n);
+                }
+                return java.util.Base64.getEncoder().encodeToString(out.toByteArray());
+            }
+        } catch (Exception e) {
+            System.err.println("Error al descargar imagen: " + e.getMessage());
+            return null;
         }
     }
 }

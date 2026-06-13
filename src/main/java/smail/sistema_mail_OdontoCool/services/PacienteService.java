@@ -13,6 +13,7 @@ import smail.sistema_mail_OdontoCool.validations.PacienteVal;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -143,44 +144,77 @@ public class PacienteService {
 
     private void list(List<String> params, String fromEmail) {
         try {
-            StringBuilder sb = new StringBuilder();
-            if (params.size() == 0) {
+            if (params.size() == 0 || params.get(0).trim().isEmpty()) {
                 sendResponse(fromEmail, "Error",
-                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                        "Falta especificar tipo de listado o término de búsqueda. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
-            if (params.size() == 1) {
 
-                switch (params.get(0)) {
-                    case "*":
-                        sb = listAll();
-                        break;
-                    default:
-                        sendResponse(fromEmail, "Error", "Listado no permitido para Pacientes.");
-                }
+            String query = params.get(0).trim();
+            StringBuilder sb = new StringBuilder();
+            List<Paciente> lista;
 
+            if ("*".equals(query)) {
+                lista = pacienteRepository.findAll();
+                sb.append("Lista de Pacientes:\n\n");
+            } else {
+                lista = pacienteRepository.searchByNameOrCi(query);
+                sb.append("Resultados de búsqueda de Pacientes para '").append(query).append("':\n\n");
             }
-            sendResponse(fromEmail, "Listado de Pacientes", sb.toString());
+
+            List<String> base64Images = new ArrayList<>();
+            if (lista.isEmpty()) {
+                sb.append("No se encontraron pacientes.\n");
+            } else {
+                for (Paciente p : lista) {
+                    String codigo = "Sin código";
+                    String email = "Sin correo";
+                    String foto = "Sin foto";
+                    Usuario u = usuarioRepository.findByPersonaCiAndSuffix(p.getCi(), "PAC").orElse(null);
+                    if (u != null) {
+                        if (u.getCodigoUsuario() != null && !u.getCodigoUsuario().trim().isEmpty()) {
+                            codigo = u.getCodigoUsuario();
+                        }
+                        if (u.getCorreoElectronico() != null && !u.getCorreoElectronico().trim().isEmpty()) {
+                            email = u.getCorreoElectronico();
+                        }
+                        if (u.getFotoUrl() != null && !u.getFotoUrl().equalsIgnoreCase("null")
+                                && !u.getFotoUrl().trim().isEmpty()) {
+                            foto = u.getFotoUrl();
+                            if (lista.size() == 1) {
+                                String b64 = descargarImagenBase64(foto);
+                                if (b64 != null) {
+                                    base64Images.add(b64);
+                                }
+                            }
+                        }
+                    }
+                    sb.append("- Paciente:\n")
+                            .append("  * CI: ").append(p.getCi()).append("\n")
+                            .append("  * Nombres: ").append(p.getNombres()).append("\n")
+                            .append("  * Apellidos: ").append(p.getApellidos()).append("\n")
+                            .append("  * Dirección: ")
+                            .append(p.getDireccion() != null ? p.getDireccion() : "No especificada").append("\n")
+                            .append("  * Teléfono: ")
+                            .append(p.getTelefono() != null ? p.getTelefono() : "No especificado").append("\n")
+                            .append("  * Fecha Nacimiento: ")
+                            .append(p.getFechaNacimiento() != null ? p.getFechaNacimiento() : "No especificada")
+                            .append("\n")
+                            .append("  * Emergencia: ")
+                            .append(p.getTelefonoEmergencia() != null ? p.getTelefonoEmergencia() : "No especificado")
+                            .append(" (")
+                            .append(p.getNombreContactoEmergencia() != null ? p.getNombreContactoEmergencia()
+                                    : "Sin nombre")
+                            .append(")\n")
+                            .append("  * Usuario: ").append(codigo).append("\n")
+                            .append("  * Email: ").append(email).append("\n")
+                            .append("  * Foto: ").append(foto).append("\n\n");
+                }
+            }
+            sendResponse(fromEmail, "Listado de Pacientes", sb.toString(), base64Images.toArray(new String[0]));
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al listar pacientes: " + e.getMessage());
         }
-    }
-
-    private StringBuilder listAll() {
-        List<Paciente> lista = pacienteRepository.findAll();
-        StringBuilder sb = new StringBuilder("Lista de Pacientes:\n\n");
-        for (Paciente p : lista) {
-            sb.append(String.format("- [%s] %s %s %s %s %s (Emergencia: %s %s)\n",
-                    p.getCi(),
-                    p.getNombres(),
-                    p.getApellidos(),
-                    p.getDireccion(),
-                    p.getTelefono(),
-                    p.getFechaNacimiento(),
-                    p.getTelefonoEmergencia(),
-                    p.getNombreContactoEmergencia()));
-        }
-        return sb;
     }
 
     @Transactional
@@ -269,11 +303,32 @@ public class PacienteService {
         }
     }
 
-    private void sendResponse(String to, String subject, String body) {
+    private void sendResponse(String to, String subject, String body, String... base64Image) {
         try {
-            smtpService.sendEmail(to, subject, body);
+            smtpService.sendEmail(to, subject, body, base64Image);
         } catch (IOException e) {
             System.err.println("Error SMTP en PacienteService: " + e.getMessage());
+        }
+    }
+
+    private String descargarImagenBase64(String urlStr) {
+        if (urlStr == null || urlStr.trim().isEmpty() || "null".equalsIgnoreCase(urlStr.trim())) {
+            return null;
+        }
+        try {
+            java.net.URL url = java.net.URI.create(urlStr).toURL();
+            try (java.io.InputStream in = url.openStream();
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+                byte[] buffer = new byte[1024];
+                int n;
+                while (-1 != (n = in.read(buffer))) {
+                    out.write(buffer, 0, n);
+                }
+                return java.util.Base64.getEncoder().encodeToString(out.toByteArray());
+            }
+        } catch (Exception e) {
+            System.err.println("Error al descargar imagen: " + e.getMessage());
+            return null;
         }
     }
 }

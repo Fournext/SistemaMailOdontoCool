@@ -64,9 +64,17 @@ public class SmtpClientService {
             writer.print("To: " + to + "\r\n");
             writer.print("Subject: " + subject + "\r\n");
             
-            String imageStr = (base64Image != null && base64Image.length > 0) ? base64Image[0] : null;
+            boolean hasImages = false;
+            if (base64Image != null && base64Image.length > 0) {
+                for (String img : base64Image) {
+                    if (img != null && !img.trim().isEmpty()) {
+                        hasImages = true;
+                        break;
+                    }
+                }
+            }
 
-            if (imageStr != null && !imageStr.trim().isEmpty()) {
+            if (hasImages) {
                 String boundary = "OuterBoundary_" + System.currentTimeMillis();
                 writer.print("MIME-Version: 1.0\r\n");
                 writer.print("Content-Type: multipart/mixed; boundary=\"" + boundary + "\"\r\n");
@@ -81,21 +89,28 @@ public class SmtpClientService {
                 writer.print(safeBody + "\r\n");
                 writer.print("\r\n");
 
-                // Imagen adjunta
-                String cleanBase64 = imageStr.trim();
-                if (cleanBase64.startsWith("data:image")) {
-                    int commaIndex = cleanBase64.indexOf(",");
-                    if (commaIndex != -1) {
-                        cleanBase64 = cleanBase64.substring(commaIndex + 1);
+                // Imágenes adjuntas
+                int index = 1;
+                for (String img : base64Image) {
+                    if (img == null || img.trim().isEmpty()) {
+                        continue;
                     }
+                    String cleanBase64 = img.trim();
+                    if (cleanBase64.startsWith("data:image")) {
+                        int commaIndex = cleanBase64.indexOf(",");
+                        if (commaIndex != -1) {
+                            cleanBase64 = cleanBase64.substring(commaIndex + 1);
+                        }
+                    }
+                    writer.print("--" + boundary + "\r\n");
+                    writer.print("Content-Type: image/png; name=\"foto_" + index + ".png\"\r\n");
+                    writer.print("Content-Transfer-Encoding: base64\r\n");
+                    writer.print("Content-Disposition: attachment; filename=\"foto_" + index + ".png\"\r\n");
+                    writer.print("\r\n");
+                    writer.print(cleanBase64 + "\r\n");
+                    writer.print("\r\n");
+                    index++;
                 }
-                writer.print("--" + boundary + "\r\n");
-                writer.print("Content-Type: image/png; name=\"qr.png\"\r\n");
-                writer.print("Content-Transfer-Encoding: base64\r\n");
-                writer.print("Content-Disposition: attachment; filename=\"qr.png\"\r\n");
-                writer.print("\r\n");
-                writer.print(cleanBase64 + "\r\n");
-                writer.print("\r\n");
 
                 writer.print("--" + boundary + "--\r\n");
             } else {
