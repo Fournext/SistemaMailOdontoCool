@@ -61,8 +61,8 @@ public class Cita {
     @OneToMany(mappedBy = "cita")
     private List<AsignacionEstadoCita> asignacionesEstadoCita;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "codigo_historial", referencedColumnName = "codigo_historial", nullable = false)
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "codigo_historial", referencedColumnName = "codigo_historial", nullable = true)
     private HistorialClinico historialClinico;
 
     @OneToOne(mappedBy = "cita")
