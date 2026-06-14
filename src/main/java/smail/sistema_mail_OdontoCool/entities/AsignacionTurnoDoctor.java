@@ -20,8 +20,8 @@ public class AsignacionTurnoDoctor {
     @Column(name = "id", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "dias_semana", nullable = false)
-    private String diasSemana;
+    @Column(name = "dia_semana", nullable = false)
+    private String diaSemana;
 
     @Column(name = "fecha_inicio", nullable = false)
     private LocalDate fechaInicio;
@@ -44,7 +44,7 @@ public class AsignacionTurnoDoctor {
     }
 
     public AsignacionTurnoDoctor(String diasSemana, LocalDate fechaInicio, LocalDate fechaFin, String estado) {
-        this.diasSemana = diasSemana;
+        this.diaSemana = diasSemana;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
         this.estado = estado;
@@ -55,8 +55,8 @@ public class AsignacionTurnoDoctor {
         return id;
     }
 
-    public String getDiasSemana() {
-        return diasSemana;
+    public String getDiaSemana() {
+        return diaSemana;
     }
 
     public LocalDate getFechaInicio() {
@@ -87,8 +87,8 @@ public class AsignacionTurnoDoctor {
         this.turno = turno;
     }
 
-    public void setDiasSemana(String diasSemana) {
-        this.diasSemana = diasSemana;
+    public void setDiaSemana(String diasSemana) {
+        this.diaSemana = diasSemana;
     }
 
     public void setFechaInicio(LocalDate fechaInicio) {

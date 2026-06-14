@@ -48,6 +48,9 @@ public class Doctor {
     @JoinTable(name = "doctor_especialidad", joinColumns = @JoinColumn(name = "doctor_ci"), inverseJoinColumns = @JoinColumn(name = "especialidad_id"))
     private Set<Especialidad> especialidades = new HashSet<>();
 
+    @OneToMany(mappedBy = "doctor")
+    private Set<Cita> citas = new HashSet<>();
+
     public Doctor() {
     }
 
@@ -208,6 +211,14 @@ public class Doctor {
     public void addAsignacionDoctor(AsignacionTurnoDoctor asignacion) {
         this.asignacionesDoctor.add(asignacion);
         asignacion.setDoctor(this);
+    }
+
+    public Set<Cita> getCitas() {
+        return citas;
+    }
+
+    public void setCitas(Set<Cita> citas) {
+        this.citas = citas;
     }
 
 }

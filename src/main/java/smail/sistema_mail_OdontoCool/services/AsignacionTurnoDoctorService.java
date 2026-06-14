@@ -14,6 +14,7 @@ import smail.sistema_mail_OdontoCool.entities.Turno;
 import smail.sistema_mail_OdontoCool.repositories.AsignacionTurnoDoctorRepository;
 import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
 import smail.sistema_mail_OdontoCool.repositories.TurnoRepository;
+import smail.sistema_mail_OdontoCool.validations.AsignacionTurnoDoctorVal;
 
 @Service
 public class AsignacionTurnoDoctorService {
@@ -26,6 +27,9 @@ public class AsignacionTurnoDoctorService {
     private TurnoRepository TurnoRepository;
     @Autowired
     private AsignacionTurnoDoctorRepository AsignacionTurnoDoctorRepository;
+
+    @Autowired
+    private AsignacionTurnoDoctorVal asignacionTurnoDoctorVal;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -47,8 +51,9 @@ public class AsignacionTurnoDoctorService {
     private void insert(List<String> params, String fromEmail) {
         try {
             // Validar parámetros
-            if (params.size() < 5) {
-                sendResponse(fromEmail, "Error", "Parámetros insuficientes para asignar turno a doctor.");
+            String valMsg = asignacionTurnoDoctorVal.insertValid(params);
+            if (!valMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error de Validación", valMsg);
                 return;
             }
 
@@ -62,7 +67,7 @@ public class AsignacionTurnoDoctorService {
             Doctor doctor = DoctorRepository.findById(doctorCi).orElse(null);
             Turno turno = TurnoRepository.findById(turnoId).orElse(null);
 
-            atd.setDiasSemana(diasSemana);
+            atd.setDiaSemana(diasSemana);
             atd.setFechaInicio(LocalDate.parse(fechaInicioStr));
             atd.setFechaFin(LocalDate.parse(fechaFinStr));
             atd.setEstado(estado);
@@ -105,23 +110,28 @@ public class AsignacionTurnoDoctorService {
         List<AsignacionTurnoDoctor> atds = AsignacionTurnoDoctorRepository.findAll();
         StringBuilder sb = new StringBuilder("Lista de Asignaciones de Turnos a doctores:\n\n");
         for (AsignacionTurnoDoctor atd : atds) {
-            sb.append(String.format(
-                    "- [%s] Nombre: %s - Turno: %s -HoraInicio: %s -HoraFin: %s (Días: %s, Estado: %s)\n",
-                    atd.getId(),
-                    atd.getDoctor().getNombres() + " " + atd.getDoctor().getApellidos(),
-                    atd.getTurno().getNombre(),
-                    atd.getTurno().getHoraInicio(),
-                    atd.getTurno().getHoraFin(),
-                    atd.getDiasSemana(),
-                    atd.getEstado()));
+            sb.append("- Asignación:\n")
+                    .append("  * ID: ").append(atd.getId()).append("\n")
+                    .append("  * Doctor: ").append(atd.getDoctor().getNombres()).append(" ")
+                    .append(atd.getDoctor().getApellidos()).append(" (CI: ").append(atd.getDoctor().getCi())
+                    .append(")\n")
+                    .append("  * Turno: ").append(atd.getTurno().getNombre()).append(" (ID: ")
+                    .append(atd.getTurno().getId()).append(")\n")
+                    .append("  * Hora Inicio: ").append(atd.getTurno().getHoraInicio()).append("\n")
+                    .append("  * Hora Fin: ").append(atd.getTurno().getHoraFin()).append("\n")
+                    .append("  * Día Semana: ").append(atd.getDiaSemana()).append("\n")
+                    .append("  * Fecha Inicio: ").append(atd.getFechaInicio()).append("\n")
+                    .append("  * Fecha Fin: ").append(atd.getFechaFin()).append("\n")
+                    .append("  * Estado: ").append(atd.getEstado()).append("\n\n");
         }
         return sb;
     }
 
     private void update(List<String> params, String fromEmail) {
         try {
-            if (params.size() < 7) {
-                sendResponse(fromEmail, "Error", "Parámetros insuficientes para modificar asignación de turno a doctor.");
+            String valMsg = asignacionTurnoDoctorVal.updateValid(params);
+            if (!valMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error de Validación", valMsg);
                 return;
             }
 
@@ -150,7 +160,7 @@ public class AsignacionTurnoDoctorService {
                         .orElseThrow(() -> new RuntimeException("Turno no encontrado"));
             }
             if (!diasSemana.trim().isEmpty()) {
-                atd.setDiasSemana(diasSemana);
+                atd.setDiaSemana(diasSemana);
             }
             if (!fechaInicioStr.trim().isEmpty()) {
                 atd.setFechaInicio(LocalDate.parse(fechaInicioStr));
@@ -168,7 +178,8 @@ public class AsignacionTurnoDoctorService {
                 atd.setTurno(turno);
             }
             AsignacionTurnoDoctorRepository.save(atd);
-            sendResponse(fromEmail, "Asignación de Turno a Doctor Actualizada", "La asignación de turno a doctor ha sido actualizada correctamente.");
+            sendResponse(fromEmail, "Asignación de Turno a Doctor Actualizada",
+                    "La asignación de turno a doctor ha sido actualizada correctamente.");
 
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo modificar asignación de turno a doctor: " + e.getMessage());

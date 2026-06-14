@@ -58,6 +58,10 @@ public class Cita {
     @JoinColumn(name = "ci_paciente", referencedColumnName = "ci", nullable = false)
     private Paciente paciente;
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "ci_doctor", referencedColumnName = "ci", nullable = false)
+    private Doctor doctor;
+
     @OneToMany(mappedBy = "cita")
     private List<AsignacionEstadoCita> asignacionesEstadoCita;
 
@@ -165,6 +169,14 @@ public class Cita {
 
     public void setDiagnostico(Diagnostico diagnostico) {
         this.diagnostico = diagnostico;
+    }
+
+    public Doctor getDoctor() {
+        return doctor;
+    }
+
+    public void setDoctor(Doctor doctor) {
+        this.doctor = doctor;
     }
 
 }
