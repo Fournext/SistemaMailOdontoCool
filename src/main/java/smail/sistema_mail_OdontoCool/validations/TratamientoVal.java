@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import smail.sistema_mail_OdontoCool.repositories.DiagnosticoRepository;
 import smail.sistema_mail_OdontoCool.repositories.HistorialClinicoRepository;
 import smail.sistema_mail_OdontoCool.repositories.TratamientoRepository;
 
@@ -17,10 +18,12 @@ public class TratamientoVal {
 
     @Autowired
     private HistorialClinicoRepository historialClinicoRepository;
+    @Autowired
+    private DiagnosticoRepository diagnosticoRepository;
 
     public String insertValid(List<String> params) {
-        if (params == null || params.size() < 7) {
-            return "Faltan parámetros. Se requieren: objetivo, observacion, estado, fechaInicio, fechaFin, fechaFinReal, codigoHistorial.\n";
+        if (params == null || params.size() < 8) {
+            return "Faltan parámetros. Se requieren: objetivo, observacion, estado, fechaInicio, fechaFin, fechaFinReal, codigoHistorial, codigoDiagnostico.\n";
         }
 
         StringBuilder msg = new StringBuilder();
@@ -33,13 +36,33 @@ public class TratamientoVal {
         validarFecha(params.get(5), "fecha fin real", true, msg);
         validarRangoFechas(params.get(3), params.get(4), params.get(5), msg);
         validarHistorial(params.get(6), true, msg);
+        validarDiagnostico(params.get(7), true, msg);
+
 
         return msg.toString();
     }
 
+    private void validarDiagnostico(String string, boolean b, StringBuilder msg) {
+            if (string == null || string.trim().isEmpty()) {
+                if (b) {
+                    msg.append("El código del diagnóstico es obligatorio.\n");
+                }
+                return;
+            }
+    
+            try {
+                Long id = Long.parseLong(string.trim());
+                if (!diagnosticoRepository.existsById(id)) {
+                    msg.append("No existe diagnóstico con ID: ").append(id).append(".\n");
+                }
+            } catch (NumberFormatException e) {
+                msg.append("El ID del diagnóstico debe ser numérico.\n");
+            }
+    }
+
     public String updateValid(List<String> params) {
-        if (params == null || params.size() < 7) {
-            return "Faltan parámetros. Se requieren: id, objetivo, observacion, estado, fechaInicio, fechaFin, fechaFinReal.\n";
+        if (params == null || params.size() < 9) {
+            return "Faltan parámetros. Se requieren: id, objetivo, observacion, estado, fechaInicio, fechaFin, fechaFinReal,codigoHistorial, codigoDiagnostico.\n";
         }
 
         StringBuilder msg = new StringBuilder();
@@ -54,6 +77,8 @@ public class TratamientoVal {
         validarFecha(params.get(5), "fecha fin", false, msg);
         validarFecha(params.get(6), "fecha fin real", false, msg);
         validarRangoFechas(params.get(4), params.get(5), params.get(6), msg);
+        validarDiagnostico(params.get(7), false, msg);
+        validarHistorial(params.get(8), false, msg);
 
         return msg.toString();
     }

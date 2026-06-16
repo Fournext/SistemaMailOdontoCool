@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
+import smail.sistema_mail_OdontoCool.entities.DetalleDiagnostico;
+import smail.sistema_mail_OdontoCool.entities.Diagnostico;
 import smail.sistema_mail_OdontoCool.entities.HistorialClinico;
 import smail.sistema_mail_OdontoCool.entities.RecetaRecomendacion;
 import smail.sistema_mail_OdontoCool.entities.ResultadoAnalisis;
@@ -15,6 +17,8 @@ import smail.sistema_mail_OdontoCool.entities.ServicioPrestado;
 import smail.sistema_mail_OdontoCool.entities.SolicitudAnalisis;
 import smail.sistema_mail_OdontoCool.entities.Tratamiento;
 import smail.sistema_mail_OdontoCool.entities.TratamientoDiente;
+import smail.sistema_mail_OdontoCool.repositories.DetalleDiagnosticoRepository;
+import smail.sistema_mail_OdontoCool.repositories.DiagnosticoRepository;
 import smail.sistema_mail_OdontoCool.repositories.HistorialClinicoRepository;
 import smail.sistema_mail_OdontoCool.repositories.RecetaRecomendacionRepository;
 import smail.sistema_mail_OdontoCool.repositories.ServicioPrestadoRepository;
@@ -43,6 +47,12 @@ public class TratamientoService {
 
     @Autowired
     private RecetaRecomendacionRepository recetaRecomendacionRepository;
+
+    @Autowired
+    private DiagnosticoRepository diagnosticoRepository;
+
+    @Autowired
+    private DetalleDiagnosticoRepository detalleDiagnosticoRepository;
 
     @Autowired
     private SmtpClientService smtpService;
@@ -82,9 +92,12 @@ public class TratamientoService {
             }
 
             String historialId = params.get(6).trim();
+            String diagnosticoId = params.get(7).trim();
 
             HistorialClinico historialClinico = historialClinicoRepository.findById(historialId)
                     .orElseThrow(() -> new RuntimeException("Historial clínico no encontrado: " + historialId));
+            Diagnostico diagnostico = diagnosticoRepository.findById(Long.parseLong(diagnosticoId))
+                    .orElseThrow(() -> new RuntimeException("Diagnóstico no encontrado con ID: " + diagnosticoId));
 
             Tratamiento tratamiento = new Tratamiento();
             tratamiento.setObjetivoTratamiento(params.get(0).trim());
@@ -94,6 +107,7 @@ public class TratamientoService {
             tratamiento.setFechaFin(LocalDate.parse(params.get(4).trim().replace('/', '-')));
             tratamiento.setFechaFinReal(LocalDate.parse(params.get(5).trim().replace('/', '-')));
             tratamiento.setHistorialClinico(historialClinico);
+            tratamiento.setDiagnostico(diagnostico);
 
             tratamientoRepository.save(tratamiento);
 
@@ -150,6 +164,19 @@ public class TratamientoService {
             String fechaInicioTexto = params.get(4).trim();
             String fechaFinTexto = params.get(5).trim();
             String fechaFinRealTexto = params.get(6).trim();
+            String codigoHistorial = params.get(7).trim();
+            String codigoDiagnostico = params.get(8).trim();
+
+            if (!codigoDiagnostico.isEmpty()) {
+                Diagnostico diagnostico = diagnosticoRepository.findById(Long.parseLong(codigoDiagnostico))
+                        .orElseThrow(() -> new RuntimeException("Diagnóstico no encontrado con ID: " + codigoDiagnostico));
+                tratamiento.setDiagnostico(diagnostico);
+            }
+            if (!codigoHistorial.isEmpty()) {
+                HistorialClinico historialClinico = historialClinicoRepository.findById(codigoHistorial)
+                        .orElseThrow(() -> new RuntimeException("Historial clínico no encontrado: " + codigoHistorial));
+                tratamiento.setHistorialClinico(historialClinico);
+            }
 
             if (!objetivoTratamiento.isEmpty()) {
                 tratamiento.setObjetivoTratamiento(objetivoTratamiento);
@@ -227,8 +254,8 @@ public class TratamientoService {
     }
 
     private StringBuilder findByHistorialClinico(String historialId) {
-        List<Tratamiento> tratamientos =
-                tratamientoRepository.findByHistorialClinicoCodigoHistorial(historialId);
+        List<Tratamiento> tratamientos
+                = tratamientoRepository.findByHistorialClinicoCodigoHistorial(historialId);
 
         StringBuilder sb = new StringBuilder();
         sb.append("Tratamientos para Historial Clínico ID: ")
@@ -260,17 +287,19 @@ public class TratamientoService {
             Tratamiento tratamiento = tratamientoRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Tratamiento con ID: " + id + " no encontrado."));
 
-            List<ServicioPrestado> serviciosPrestados =
-                    servicioPrestadoRepository.findByTratamientoId(id);
+            List<ServicioPrestado> serviciosPrestados
+                    = servicioPrestadoRepository.findByTratamientoId(id);
 
-            List<TratamientoDiente> tratamientosDientes =
-                    tratamientoDienteRepository.findByTratamientoId(id);
+            List<TratamientoDiente> tratamientosDientes
+                    = tratamientoDienteRepository.findByTratamientoId(id);
 
-            List<SolicitudAnalisis> solicitudesAnalisis =
-                    solicitudAnalisisRepository.findByTratamientoIdConResultado(id);
+            List<SolicitudAnalisis> solicitudesAnalisis
+                    = solicitudAnalisisRepository.findByTratamientoIdConResultado(id);
 
-            List<RecetaRecomendacion> recetas =
-                    recetaRecomendacionRepository.findByTratamientoId(id);
+            List<RecetaRecomendacion> recetas
+                    = recetaRecomendacionRepository.findByTratamientoId(id);
+            Diagnostico diagnostico = tratamiento.getDiagnostico();
+            List<DetalleDiagnostico> detalleDiagnostico = detalleDiagnosticoRepository.findByDiagnosticoId(diagnostico.getId());
 
             StringBuilder sb = new StringBuilder();
 
@@ -279,7 +308,9 @@ public class TratamientoService {
                     serviciosPrestados,
                     tratamientosDientes,
                     solicitudesAnalisis,
-                    recetas
+                    recetas,
+                    diagnostico,
+                    detalleDiagnostico
             ));
 
             sendResponse(fromEmail, "Detalle del Tratamiento", sb.toString());
@@ -307,7 +338,9 @@ public class TratamientoService {
             List<ServicioPrestado> serviciosPrestados,
             List<TratamientoDiente> tratamientosDientes,
             List<SolicitudAnalisis> solicitudesAnalisis,
-            List<RecetaRecomendacion> recetas
+            List<RecetaRecomendacion> recetas,
+            Diagnostico diagnostico,
+            List<DetalleDiagnostico> detalleDiagnostico
     ) {
         StringBuilder sb = new StringBuilder();
 
@@ -383,6 +416,29 @@ public class TratamientoService {
                     sb.append("  Resultado: Pendiente\n");
                 }
             }
+        }
+        //vamos a agregar los detalles al diagnostico
+        if (diagnostico != null) {
+            sb.append("\nDiagnóstico:\n");
+            sb.append(String.format(
+                    "- Diagnóstico [%s] Síntomas: %s | Tipo: %s | Gravedad: %s | Observaciones: %s\n",
+                    diagnostico.getId(),
+                    diagnostico.getSintomas(),
+                    diagnostico.getTipoDiagnostico(),
+                    diagnostico.getGravedad(),
+                    diagnostico.getObservaciones()
+            ));
+            for (DetalleDiagnostico detalle : detalleDiagnostico) {
+                sb.append(String.format(
+                        "  Detalle [%s] Observación: %s | Zona Bucal: %s | Diente: %s\n",
+                        detalle.getId(),
+                        detalle.getObservacion(),
+                        detalle.getZonaBucal(),
+                        detalle.getDiente() != null ? detalle.getDiente().getNumero() : "N/A"
+                ));
+            }
+        } else {
+            sb.append("\nDiagnóstico: No registrado\n");
         }
 
         sb.append("\nRecetas/Recomendaciones:\n");

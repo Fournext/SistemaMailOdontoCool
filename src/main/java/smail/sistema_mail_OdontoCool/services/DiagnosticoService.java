@@ -8,9 +8,13 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Cita;
+import smail.sistema_mail_OdontoCool.entities.DetalleDiagnostico;
 import smail.sistema_mail_OdontoCool.entities.Diagnostico;
+import smail.sistema_mail_OdontoCool.entities.Diente;
 import smail.sistema_mail_OdontoCool.repositories.CitaRepository;
 import smail.sistema_mail_OdontoCool.repositories.DiagnosticoRepository;
+import smail.sistema_mail_OdontoCool.repositories.DienteRepository;
+import smail.sistema_mail_OdontoCool.validations.DiagnosticoVal;
 
 @Service
 
@@ -22,6 +26,10 @@ public class DiagnosticoService {
     private SmtpClientService smtpService;
     @Autowired
     private CitaRepository citaRepository;
+    @Autowired
+    private DienteRepository dienteRepository;
+    @Autowired
+    private DiagnosticoVal diagnosticoVal;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -44,11 +52,22 @@ public class DiagnosticoService {
 
     @Transactional
     private void insert(List<String> params, String fromEmail) {
+        String errores = diagnosticoVal.insertValid(params);
+        if (!errores.isEmpty()) {
+            sendResponse(fromEmail, "Error", errores);
+            return;
+        }
         try {
-            // sintomas[0], tipoDiagnostico[1], gravedad[2], observaciones[3], citaId[4]
+            /*
+         * Formato:
+         * INSDIA["Sintomas", "TipoDiagnostico", "Gravedad", "Observaciones", "ID Cita", "ObservacionDetalle;ZonaBucal;ID Diente | ObservacionDetalle;ZonaBucal;ID Diente"]
+             */
 
-            if (params.size() < 5) {
-                sendResponse(fromEmail, "Error", "Parámetros insuficientes para insertar un diagnóstico.");
+            if (params.size() < 6) {
+                sendResponse(fromEmail, "Error",
+                        "Parámetros insuficientes.\n"
+                        + "Formato correcto:\n"
+                        + "INSDIA[\"Sintomas\", \"TipoDiagnostico\", \"Gravedad\", \"Observaciones\", \"ID Cita\", \"ObservacionDetalle;ZonaBucal;ID Diente | ObservacionDetalle;ZonaBucal;ID Diente\"]");
                 return;
             }
 
@@ -57,6 +76,7 @@ public class DiagnosticoService {
             String gravedad = params.get(2).trim();
             String observaciones = params.get(3).trim();
             String citaIdTexto = params.get(4).trim();
+            String detallesRaw = params.get(5).trim();
 
             if (sintomas.isEmpty()) {
                 sendResponse(fromEmail, "Error", "Los síntomas son obligatorios.");
@@ -78,6 +98,11 @@ public class DiagnosticoService {
                 return;
             }
 
+            if (detallesRaw.isEmpty()) {
+                sendResponse(fromEmail, "Error", "Debe enviar al menos un detalle de diagnóstico.");
+                return;
+            }
+
             Long citaId = Long.parseLong(citaIdTexto);
 
             Cita cita = citaRepository.findById(citaId)
@@ -95,38 +120,60 @@ public class DiagnosticoService {
             diagnostico.setObservaciones(observaciones);
             diagnostico.setCita(cita);
 
+            cargarDetallesDesdeTexto(diagnostico, detallesRaw);
+
+            if (diagnostico.getDetallesDiagnostico().isEmpty()) {
+                sendResponse(fromEmail, "Error", "Debe registrar al menos un detalle válido.");
+                return;
+            }
+
             diagnosticoRepository.save(diagnostico);
 
-            sendResponse(fromEmail, "Éxito", "Diagnóstico registrado correctamente con ID: " + diagnostico.getId());
+            sendResponse(fromEmail, "Éxito",
+                    "Diagnóstico registrado correctamente.\n"
+                    + "ID Diagnóstico: " + diagnostico.getId() + "\n"
+                    + "Detalles registrados: " + diagnostico.getDetallesDiagnostico().size());
+
+        } catch (NumberFormatException e) {
+            sendResponse(fromEmail, "Error", "El ID de la cita y el ID del diente deben ser numéricos.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo registrar el diagnóstico: " + e.getMessage());
         }
     }
 
     private void list(List<String> params, String fromEmail) {
+         String errores = diagnosticoVal.listValid(params);
+        if (!errores.isEmpty()) {
+            sendResponse(fromEmail, "Error", errores);
+            return;
+        }
         try {
-            StringBuilder sb = new StringBuilder();
-            if (params.size() == 0) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+            if (params == null || params.isEmpty()) {
+                sendResponse(fromEmail, "Error", "Use LISDIA[*]");
                 return;
             }
-            if (params.size() == 1) {
-                switch (params.get(0)) {
-                    case "*":
-                        sb = listAll();
-                        break;
-                    default:
-                        sendResponse(fromEmail, "Error", "Listado no permitido para Diagnosticos.");
-                }
+
+            String parametro = params.get(0).trim();
+
+            if (parametro.equals("*")) {
+                sendResponse(fromEmail, "Listado de Diagnósticos", listAll().toString());
+                return;
             }
-            sendResponse(fromEmail, "Listado de Diagnosticos", sb.toString());
+
+            sendResponse(fromEmail, "Error", "Listado no permitido para Diagnósticos.");
+
         } catch (Exception e) {
-            sendResponse(fromEmail, "Error", "Error al listar diagnosticos: " + e.getMessage());
+            sendResponse(fromEmail, "Error", "Error al listar diagnósticos: " + e.getMessage());
         }
     }
 
     @Transactional
     private void update(List<String> params, String fromEmail) {
+         String errores = diagnosticoVal.updateValid(params);
+        if (!errores.isEmpty()) {
+            sendResponse(fromEmail, "Error", errores);
+            return;
+        }
         try {
             // id[0], sintomas[1], tipoDiagnostico[2], gravedad[3], observaciones[4], citaId[5]
 
@@ -206,19 +253,101 @@ public class DiagnosticoService {
     }
 
     private StringBuilder listAll() {
-        List<Diagnostico> diagnosticos = diagnosticoRepository.findAll();
+        
+        List<Diagnostico> diagnosticos = diagnosticoRepository.listarTodoConDetalles();
+
         StringBuilder sb = new StringBuilder();
-        sb.append("listado de Diagnosticos\n");
-        for (Diagnostico diagnostico : diagnosticos) {
-            sb.append(String.format("- [%s] sintomas: %s tipoDiagnostico: %s, gravedad: %s, observaciones: %s, cita: %s\n",
-                    diagnostico.getId(),
-                    diagnostico.getSintomas(),
-                    diagnostico.getTipoDiagnostico(),
-                    diagnostico.getGravedad(),
-                    diagnostico.getObservaciones(),
-                    diagnostico.getCita().getIdCita()));
+        sb.append("Listado de Diagnósticos\n\n");
+
+        if (diagnosticos.isEmpty()) {
+            sb.append("No existen diagnósticos registrados.\n");
+            return sb;
         }
+
+        for (Diagnostico diagnostico : diagnosticos) {
+            sb.append("--------------------------------------------------\n");
+            sb.append("ID Diagnóstico: ").append(diagnostico.getId()).append("\n");
+            sb.append("Síntomas: ").append(diagnostico.getSintomas()).append("\n");
+            sb.append("Tipo diagnóstico: ").append(diagnostico.getTipoDiagnostico()).append("\n");
+            sb.append("Gravedad: ").append(diagnostico.getGravedad()).append("\n");
+            sb.append("Observaciones: ")
+                    .append(diagnostico.getObservaciones() != null ? diagnostico.getObservaciones() : "N/A")
+                    .append("\n");
+            sb.append("ID Cita: ")
+                    .append(diagnostico.getCita() != null ? diagnostico.getCita().getIdCita() : "N/A")
+                    .append("\n");
+
+            sb.append("Detalles:\n");
+
+            if (diagnostico.getDetallesDiagnostico() == null || diagnostico.getDetallesDiagnostico().isEmpty()) {
+                sb.append("  Sin detalles registrados.\n");
+            } else {
+                int i = 1;
+                for (DetalleDiagnostico detalle : diagnostico.getDetallesDiagnostico()) {
+                    sb.append("  ").append(i).append(") ")
+                            .append("Zona bucal: ").append(detalle.getZonaBucal()).append("\n");
+                    sb.append("     Observación: ")
+                            .append(detalle.getObservacion() != null ? detalle.getObservacion() : "N/A")
+                            .append("\n");
+
+                    if (detalle.getDiente() != null) {
+                        sb.append("     Diente ID: ").append(detalle.getDiente().getId()).append("\n");
+                        sb.append("     Diente: ").append(detalle.getDiente().getNombre()).append("\n");
+                    }
+
+                    i++;
+                }
+            }
+
+            sb.append("\n");
+        }
+
         return sb;
+    }
+
+    private void cargarDetallesDesdeTexto(Diagnostico diagnostico, String detallesRaw) {
+        String[] detalles = detallesRaw.split("\\|");
+
+        for (int i = 0; i < detalles.length; i++) {
+            String detalleTexto = detalles[i].trim();
+
+            if (detalleTexto.isEmpty()) {
+                continue;
+            }
+
+            String[] partes = detalleTexto.split(";", -1);
+
+            if (partes.length < 3) {
+                throw new IllegalArgumentException(
+                        "El detalle N° " + (i + 1) + " está incompleto.\n"
+                        + "Formato correcto del detalle:\n"
+                        + "ObservacionDetalle;ZonaBucal;ID Diente");
+            }
+
+            String observacionDetalle = partes[0].trim();
+            String zonaBucal = partes[1].trim();
+            String dienteIdTexto = partes[2].trim();
+
+            if (zonaBucal.isEmpty()) {
+                throw new IllegalArgumentException("La zona bucal del detalle N° " + (i + 1) + " es obligatoria.");
+            }
+
+            if (dienteIdTexto.isEmpty()) {
+                throw new IllegalArgumentException("El ID del diente del detalle N° " + (i + 1) + " es obligatorio.");
+            }
+
+            Long dienteId = Long.parseLong(dienteIdTexto);
+
+            Diente diente = dienteRepository.findById(dienteId)
+                    .orElseThrow(() -> new RuntimeException("Diente no encontrado con ID: " + dienteId));
+
+            DetalleDiagnostico detalle = new DetalleDiagnostico();
+            detalle.setObservacion(observacionDetalle);
+            detalle.setZonaBucal(zonaBucal);
+            detalle.setDiente(diente);
+
+            diagnostico.addDetalleDiagnostico(detalle);
+        }
     }
 
 }
