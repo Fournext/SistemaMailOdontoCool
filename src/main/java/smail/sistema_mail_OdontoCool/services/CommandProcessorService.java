@@ -92,6 +92,8 @@ public class CommandProcessorService {
     private DetalleRecomendacionService DetalleRecomendacionService;
     @Autowired
     private RecetaRecomendacionService RecetaRecomendacionService;
+    @Autowired
+    private ReporteEstadisticaService reporteEstadisticaService;
 
     // Regex mejorada: permite espacios entre el comando y los corchetes
     private static final Pattern COMMAND_PATTERN = Pattern.compile(
@@ -249,10 +251,14 @@ public class CommandProcessorService {
                 // El servicio de Recetas/Recomendaciones no maneja imágenes, por lo que se pasa
                 // una lista vacía
                 RecetaRecomendacionService.handle(action, params, fromEmail);
+                break;
             case "DRE":
                 // El servicio de Detalles de Recomendación no maneja imágenes, por lo que se
                 // pasa una lista vacía
                 DetalleRecomendacionService.handle(action, params, fromEmail);
+                break;
+            case "REP":
+                reporteEstadisticaService.handle(action, params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);

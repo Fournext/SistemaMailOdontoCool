@@ -8,7 +8,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Cita;
 import smail.sistema_mail_OdontoCool.entities.AsignacionEstadoCita;
 import smail.sistema_mail_OdontoCool.entities.EstadoCita;
