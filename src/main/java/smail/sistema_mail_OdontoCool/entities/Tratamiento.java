@@ -51,6 +51,9 @@ public class Tratamiento {
     @OneToMany(mappedBy = "tratamiento")
     private Set<RecetaRecomendacion> recetasRecomendaciones = new HashSet<>();
 
+    @OneToMany(mappedBy = "tratamiento")
+    private Set<SolicitudAnalisis> solicitudesAnalisis = new HashSet<>();
+
     public Tratamiento() {
     }
 
@@ -91,6 +94,14 @@ public class Tratamiento {
 
     public LocalDate getFechaFinReal() {
         return fechaFinReal;
+    }
+
+    public Set<SolicitudAnalisis> getSolicitudesAnalisis() {
+        return solicitudesAnalisis;
+    }
+
+    public void setSolicitudesAnalisis(Set<SolicitudAnalisis> solicitudesAnalisis) {
+        this.solicitudesAnalisis = solicitudesAnalisis;
     }
 
     public void setObjetivoTratamiento(String objetivoTratamiento) {

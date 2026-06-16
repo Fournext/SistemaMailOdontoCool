@@ -249,6 +249,7 @@ public class CommandProcessorService {
                 // El servicio de Recetas/Recomendaciones no maneja imágenes, por lo que se pasa
                 // una lista vacía
                 RecetaRecomendacionService.handle(action, params, fromEmail);
+                break;
             case "DRE":
                 // El servicio de Detalles de Recomendación no maneja imágenes, por lo que se
                 // pasa una lista vacía

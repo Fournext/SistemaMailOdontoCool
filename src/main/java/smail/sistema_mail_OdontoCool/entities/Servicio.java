@@ -29,6 +29,9 @@ public class Servicio {
     @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
+    @Column(name = "tipo")
+    private String tipo;
+
     @Column(name = "estado")
     private String estado = "ACTIVO";
 
@@ -56,6 +59,10 @@ public class Servicio {
         return descripcion;
     }
 
+    public String getTipo() {
+        return tipo;
+    }
+
     public String getEstado() {
         return estado;
     }
@@ -70,6 +77,10 @@ public class Servicio {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 
     public void setEstado(String estado) {
