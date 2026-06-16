@@ -43,6 +43,10 @@ public class Usuario {
     @JoinColumn(name = "ci_persona", referencedColumnName = "ci", nullable = false)
     private Persona persona;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_rol", referencedColumnName = "id_rol")
+    private Rol rol;
+
     @PrePersist
     public void prePersist() {
         if (fechaCreacion == null) {
@@ -109,6 +113,14 @@ public class Usuario {
 
     public void setPersona(Persona persona) {
         this.persona = persona;
+    }
+
+    public Rol getRol() {
+        return rol;
+    }
+
+    public void setRol(Rol rol) {
+        this.rol = rol;
     }
 
 }

@@ -92,6 +92,15 @@ public class CommandProcessorService {
     private DetalleRecomendacionService DetalleRecomendacionService;
     @Autowired
     private RecetaRecomendacionService RecetaRecomendacionService;
+
+    @Autowired
+    private RolService rolService;
+
+    @Autowired
+    private ModuloService moduloService;
+
+    @Autowired
+    private AsignacionPermisoService asignacionPermisoService;
     @Autowired
     private ReporteEstadisticaService reporteEstadisticaService;
 
@@ -256,6 +265,15 @@ public class CommandProcessorService {
                 // El servicio de Detalles de Recomendación no maneja imágenes, por lo que se
                 // pasa una lista vacía
                 DetalleRecomendacionService.handle(action, params, fromEmail);
+                break;
+            case "ROL":
+                rolService.handle(action, params, fromEmail);
+                break;
+            case "MOD":
+                moduloService.handle(action, params, fromEmail);
+                break;
+            case "PER":
+                asignacionPermisoService.handle(action, params, fromEmail);
                 break;
             case "REP":
                 reporteEstadisticaService.handle(action, params, fromEmail);
