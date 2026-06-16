@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Paciente;
 import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
-import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.PacienteRepository;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;

@@ -11,11 +11,9 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -51,12 +49,16 @@ public class ReporteEstadisticaService {
         try {
             String option = (params != null && !params.isEmpty()) ? params.get(0).trim().toUpperCase() : "*";
 
-            boolean showCitas = option.equals("*") || option.equals("ALL") || option.equals("CITAS") || option.equals("DOCTOR") || option.equals("DOCTORES");
-            boolean showServicios = option.equals("*") || option.equals("ALL") || option.equals("SERVICIOS") || option.equals("SERVICIO");
-            boolean showIngresos = option.equals("*") || option.equals("ALL") || option.equals("INGRESOS") || option.equals("INGRESO");
+            boolean showCitas = option.equals("*") || option.equals("ALL") || option.equals("CITAS")
+                    || option.equals("DOCTOR") || option.equals("DOCTORES");
+            boolean showServicios = option.equals("*") || option.equals("ALL") || option.equals("SERVICIOS")
+                    || option.equals("SERVICIO");
+            boolean showIngresos = option.equals("*") || option.equals("ALL") || option.equals("INGRESOS")
+                    || option.equals("INGRESO");
 
             if (!showCitas && !showServicios && !showIngresos) {
-                sendResponse(fromEmail, "Error", "Parámetro de reporte no reconocido. Use: LISREP[\"*\"], LISREP[\"CITAS\"], LISREP[\"SERVICIOS\"] o LISREP[\"INGRESOS\"].");
+                sendResponse(fromEmail, "Error",
+                        "Parámetro de reporte no reconocido. Use: LISREP[\"*\"], LISREP[\"CITAS\"], LISREP[\"SERVICIOS\"] o LISREP[\"INGRESOS\"].");
                 return;
             }
 
@@ -73,7 +75,8 @@ public class ReporteEstadisticaService {
                 for (Cita c : citas) {
                     if (!"ELIMINADA".equalsIgnoreCase(getEstadoActual(c))) {
                         String docName = c.getDoctor() != null && c.getDoctor().getPersona() != null
-                                ? c.getDoctor().getPersona().getNombres() + " " + c.getDoctor().getPersona().getApellidos()
+                                ? c.getDoctor().getPersona().getNombres() + " "
+                                        + c.getDoctor().getPersona().getApellidos()
                                 : "Desconocido";
                         citasPorDoctor.put(docName, citasPorDoctor.getOrDefault(docName, 0L) + 1);
                     }
@@ -85,7 +88,8 @@ public class ReporteEstadisticaService {
                 for (ServicioPrestado sp : serviciosPrestados) {
                     if (sp.getServicio() != null) {
                         String srvName = sp.getServicio().getNombre();
-                        serviciosFrecuentes.put(srvName, serviciosFrecuentes.getOrDefault(srvName, 0L) + sp.getCantidad());
+                        serviciosFrecuentes.put(srvName,
+                                serviciosFrecuentes.getOrDefault(srvName, 0L) + sp.getCantidad());
                     }
                 }
             }
@@ -113,8 +117,14 @@ public class ReporteEstadisticaService {
             sb.append("RESUMEN GENERAL:\n");
             sb.append("* Total Pacientes Registrados: ").append(totalPacientes).append("\n");
             sb.append("* Total Médicos Registrados: ").append(totalDoctores).append("\n");
-            sb.append("* Total Citas Activas: ").append(citas.stream().filter(c -> !"ELIMINADA".equalsIgnoreCase(getEstadoActual(c))).count()).append("\n");
-            sb.append("* Total Ingresos Consolidados: ").append(String.format("%.2f", boletas.stream().filter(b -> !"ELIMINADO".equalsIgnoreCase(b.getEstadoPago())).mapToDouble(BoletaPago::getTotal).sum())).append(" Bs.\n\n");
+            sb.append("* Total Citas Activas: ")
+                    .append(citas.stream().filter(c -> !"ELIMINADA".equalsIgnoreCase(getEstadoActual(c))).count())
+                    .append("\n");
+            sb.append("* Total Ingresos Consolidados: ")
+                    .append(String.format("%.2f",
+                            boletas.stream().filter(b -> !"ELIMINADO".equalsIgnoreCase(b.getEstadoPago()))
+                                    .mapToDouble(BoletaPago::getTotal).sum()))
+                    .append(" Bs.\n\n");
 
             if (showCitas) {
                 String chart1Base64 = generateBarChart("Citas por Doctor", citasPorDoctor, "Citas");
@@ -124,7 +134,8 @@ public class ReporteEstadisticaService {
                 if (citasPorDoctor.isEmpty()) {
                     sb.append("  * No hay citas registradas.\n");
                 } else {
-                    citasPorDoctor.forEach((doc, count) -> sb.append("  * ").append(doc).append(": ").append(count).append(" cita(s)\n"));
+                    citasPorDoctor.forEach((doc, count) -> sb.append("  * ").append(doc).append(": ").append(count)
+                            .append(" cita(s)\n"));
                 }
                 sb.append("\n");
             }
@@ -137,7 +148,8 @@ public class ReporteEstadisticaService {
                 if (serviciosFrecuentes.isEmpty()) {
                     sb.append("  * No hay servicios prestados registrados.\n");
                 } else {
-                    serviciosFrecuentes.forEach((srv, count) -> sb.append("  * ").append(srv).append(": ").append(count).append(" vez/veces solicitado\n"));
+                    serviciosFrecuentes.forEach((srv, count) -> sb.append("  * ").append(srv).append(": ").append(count)
+                            .append(" vez/veces solicitado\n"));
                 }
                 sb.append("\n");
             }
@@ -153,7 +165,8 @@ public class ReporteEstadisticaService {
                     List<String> sortedMonths = new ArrayList<>(ingresosPorMes.keySet());
                     Collections.sort(sortedMonths);
                     for (String m : sortedMonths) {
-                        sb.append("  * Mes ").append(m).append(": ").append(String.format("%.2f", ingresosPorMes.get(m))).append(" Bs.\n");
+                        sb.append("  * Mes ").append(m).append(": ")
+                                .append(String.format("%.2f", ingresosPorMes.get(m))).append(" Bs.\n");
                     }
                 }
                 sb.append("\n");
@@ -232,7 +245,8 @@ public class ReporteEstadisticaService {
         }
 
         double maxValue = data.values().stream().mapToDouble(Long::doubleValue).max().orElse(1.0);
-        if (maxValue == 0) maxValue = 1.0;
+        if (maxValue == 0)
+            maxValue = 1.0;
 
         // Líneas de cuadrícula
         g2.setColor(new Color(230, 230, 230));
@@ -259,7 +273,8 @@ public class ReporteEstadisticaService {
         int barGap = 15;
         int totalGapsWidth = barGap * (numBars + 1);
         int barWidth = (chartWidth - 20 - totalGapsWidth) / numBars;
-        if (barWidth < 5) barWidth = 5;
+        if (barWidth < 5)
+            barWidth = 5;
 
         Color[] colors = {
                 new Color(77, 150, 255),
@@ -413,7 +428,8 @@ public class ReporteEstadisticaService {
         Collections.sort(sortedKeys);
 
         double maxValue = data.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
-        if (maxValue == 0) maxValue = 1.0;
+        if (maxValue == 0)
+            maxValue = 1.0;
 
         // Cuadrícula e Y-labels
         g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
@@ -450,7 +466,7 @@ public class ReporteEstadisticaService {
         g2.setColor(new Color(77, 150, 255));
         g2.setStroke(new BasicStroke(3));
         for (int i = 0; i < numPoints - 1; i++) {
-            g2.drawLine(xCoords[i], yCoords[i], xCoords[i+1], yCoords[i+1]);
+            g2.drawLine(xCoords[i], yCoords[i], xCoords[i + 1], yCoords[i + 1]);
         }
 
         // Dibujar puntos y etiquetas

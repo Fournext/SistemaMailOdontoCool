@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Propietario;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
-import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.PropietarioRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
@@ -174,7 +173,8 @@ public class PropietarioService {
                         if (u.getCorreoElectronico() != null && !u.getCorreoElectronico().trim().isEmpty()) {
                             email = u.getCorreoElectronico();
                         }
-                        if (u.getFotoUrl() != null && !u.getFotoUrl().equalsIgnoreCase("null") && !u.getFotoUrl().trim().isEmpty()) {
+                        if (u.getFotoUrl() != null && !u.getFotoUrl().equalsIgnoreCase("null")
+                                && !u.getFotoUrl().trim().isEmpty()) {
                             foto = u.getFotoUrl();
                             if (lista.size() == 1) {
                                 String b64 = descargarImagenBase64(foto);
@@ -185,17 +185,27 @@ public class PropietarioService {
                         }
                     }
                     sb.append("- Propietario:\n")
-                      .append("  * CI: ").append(p.getCi()).append("\n")
-                      .append("  * Nombre: ").append(p.getNombres()).append(" ").append(p.getApellidos()).append("\n")
-                      .append("  * Dirección: ").append(p.getDireccion() != null ? p.getDireccion() : "No especificada").append("\n")
-                      .append("  * Género: ").append(p.getGenero() != null ? p.getGenero() : "No especificado").append("\n")
-                      .append("  * Teléfono: ").append(p.getTelefono() != null ? p.getTelefono() : "No especificado").append("\n")
-                      .append("  * Fecha Nacimiento: ").append(p.getFechaNacimiento() != null ? p.getFechaNacimiento() : "No especificada").append("\n")
-                      .append("  * Fecha Registro: ").append(p.getFechaRegistro() != null ? p.getFechaRegistro() : "No especificada").append("\n")
-                      .append("  * Participación: ").append(p.getPorcentajeParticipacion() != null ? p.getPorcentajeParticipacion() : "0.00").append("%\n")
-                      .append("  * Usuario: ").append(codigo).append("\n")
-                      .append("  * Email: ").append(email).append("\n")
-                      .append("  * Foto: ").append(foto).append("\n\n");
+                            .append("  * CI: ").append(p.getCi()).append("\n")
+                            .append("  * Nombre: ").append(p.getNombres()).append(" ").append(p.getApellidos())
+                            .append("\n")
+                            .append("  * Dirección: ")
+                            .append(p.getDireccion() != null ? p.getDireccion() : "No especificada").append("\n")
+                            .append("  * Género: ").append(p.getGenero() != null ? p.getGenero() : "No especificado")
+                            .append("\n")
+                            .append("  * Teléfono: ")
+                            .append(p.getTelefono() != null ? p.getTelefono() : "No especificado").append("\n")
+                            .append("  * Fecha Nacimiento: ")
+                            .append(p.getFechaNacimiento() != null ? p.getFechaNacimiento() : "No especificada")
+                            .append("\n")
+                            .append("  * Fecha Registro: ")
+                            .append(p.getFechaRegistro() != null ? p.getFechaRegistro() : "No especificada")
+                            .append("\n")
+                            .append("  * Participación: ")
+                            .append(p.getPorcentajeParticipacion() != null ? p.getPorcentajeParticipacion() : "0.00")
+                            .append("%\n")
+                            .append("  * Usuario: ").append(codigo).append("\n")
+                            .append("  * Email: ").append(email).append("\n")
+                            .append("  * Foto: ").append(foto).append("\n\n");
                 }
             }
             sendResponse(fromEmail, "Listado de Propietarios", sb.toString(), base64Images.toArray(new String[0]));
@@ -322,7 +332,7 @@ public class PropietarioService {
         try {
             java.net.URL url = java.net.URI.create(urlStr).toURL();
             try (java.io.InputStream in = url.openStream();
-                 java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
                 byte[] buffer = new byte[1024];
                 int n;
                 while (-1 != (n = in.read(buffer))) {

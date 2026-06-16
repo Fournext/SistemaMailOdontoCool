@@ -13,7 +13,6 @@ import smail.sistema_mail_OdontoCool.entities.Doctor;
 import smail.sistema_mail_OdontoCool.entities.Especialidad;
 import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
-import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
 import smail.sistema_mail_OdontoCool.repositories.EspecialidadRepository;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
@@ -224,7 +223,8 @@ public class DoctorService {
                         if (u.getCorreoElectronico() != null && !u.getCorreoElectronico().trim().isEmpty()) {
                             email = u.getCorreoElectronico();
                         }
-                        if (u.getFotoUrl() != null && !u.getFotoUrl().equalsIgnoreCase("null") && !u.getFotoUrl().trim().isEmpty()) {
+                        if (u.getFotoUrl() != null && !u.getFotoUrl().equalsIgnoreCase("null")
+                                && !u.getFotoUrl().trim().isEmpty()) {
                             foto = u.getFotoUrl();
                             if (lista.size() == 1) {
                                 String b64 = descargarImagenBase64(foto);
@@ -235,17 +235,28 @@ public class DoctorService {
                         }
                     }
                     sb.append("- Doctor:\n")
-                      .append("  * CI: ").append(d.getCi()).append("\n")
-                      .append("  * Nombre: Dr. ").append(d.getNombres()).append(" ").append(d.getApellidos()).append("\n")
-                      .append("  * Dirección: ").append(d.getDireccion() != null ? d.getDireccion() : "No especificada").append("\n")
-                      .append("  * Género: ").append(d.getGenero() != null ? d.getGenero() : "No especificado").append("\n")
-                      .append("  * Teléfono: ").append(d.getTelefono() != null ? d.getTelefono() : "No especificado").append("\n")
-                      .append("  * Fecha Nacimiento: ").append(d.getFechaNacimiento() != null ? d.getFechaNacimiento() : "No especificada").append("\n")
-                      .append("  * Matrícula: ").append(d.getMatriculaProfesional() != null ? d.getMatriculaProfesional() : "No especificada").append("\n")
-                      .append("  * Teléfono Prof.: ").append(d.getTelefonoProfesional() != null ? d.getTelefonoProfesional() : "No especificado").append("\n")
-                      .append("  * Usuario: ").append(codigo).append("\n")
-                      .append("  * Email: ").append(email).append("\n")
-                      .append("  * Foto: ").append(foto).append("\n\n");
+                            .append("  * CI: ").append(d.getCi()).append("\n")
+                            .append("  * Nombre: Dr. ").append(d.getNombres()).append(" ").append(d.getApellidos())
+                            .append("\n")
+                            .append("  * Dirección: ")
+                            .append(d.getDireccion() != null ? d.getDireccion() : "No especificada").append("\n")
+                            .append("  * Género: ").append(d.getGenero() != null ? d.getGenero() : "No especificado")
+                            .append("\n")
+                            .append("  * Teléfono: ")
+                            .append(d.getTelefono() != null ? d.getTelefono() : "No especificado").append("\n")
+                            .append("  * Fecha Nacimiento: ")
+                            .append(d.getFechaNacimiento() != null ? d.getFechaNacimiento() : "No especificada")
+                            .append("\n")
+                            .append("  * Matrícula: ")
+                            .append(d.getMatriculaProfesional() != null ? d.getMatriculaProfesional()
+                                    : "No especificada")
+                            .append("\n")
+                            .append("  * Teléfono Prof.: ")
+                            .append(d.getTelefonoProfesional() != null ? d.getTelefonoProfesional() : "No especificado")
+                            .append("\n")
+                            .append("  * Usuario: ").append(codigo).append("\n")
+                            .append("  * Email: ").append(email).append("\n")
+                            .append("  * Foto: ").append(foto).append("\n\n");
                 }
             }
             sendResponse(fromEmail, "Listado de Doctores", sb.toString(), base64Images.toArray(new String[0]));
@@ -358,7 +369,7 @@ public class DoctorService {
         try {
             java.net.URL url = java.net.URI.create(urlStr).toURL();
             try (java.io.InputStream in = url.openStream();
-                 java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
                 byte[] buffer = new byte[1024];
                 int n;
                 while (-1 != (n = in.read(buffer))) {

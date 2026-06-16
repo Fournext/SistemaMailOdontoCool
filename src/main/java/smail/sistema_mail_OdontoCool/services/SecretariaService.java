@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Secretaria;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
-import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
@@ -182,7 +181,8 @@ public class SecretariaService {
                         if (u.getCorreoElectronico() != null && !u.getCorreoElectronico().trim().isEmpty()) {
                             email = u.getCorreoElectronico();
                         }
-                        if (u.getFotoUrl() != null && !u.getFotoUrl().equalsIgnoreCase("null") && !u.getFotoUrl().trim().isEmpty()) {
+                        if (u.getFotoUrl() != null && !u.getFotoUrl().equalsIgnoreCase("null")
+                                && !u.getFotoUrl().trim().isEmpty()) {
                             foto = u.getFotoUrl();
                             if (lista.size() == 1) {
                                 String b64 = descargarImagenBase64(foto);
@@ -193,16 +193,24 @@ public class SecretariaService {
                         }
                     }
                     sb.append("- Secretaria:\n")
-                      .append("  * CI: ").append(s.getCi()).append("\n")
-                      .append("  * Nombre: ").append(s.getNombres()).append(" ").append(s.getApellidos()).append("\n")
-                      .append("  * Dirección: ").append(s.getDireccion() != null ? s.getDireccion() : "No especificada").append("\n")
-                      .append("  * Género: ").append(s.getGenero() != null ? s.getGenero() : "No especificado").append("\n")
-                      .append("  * Teléfono: ").append(s.getTelefono() != null ? s.getTelefono() : "No especificado").append("\n")
-                      .append("  * Fecha Nacimiento: ").append(s.getFechaNacimiento() != null ? s.getFechaNacimiento() : "No especificada").append("\n")
-                      .append("  * Fecha Contratación: ").append(s.getFechaContratacion() != null ? s.getFechaContratacion() : "No especificada").append("\n")
-                      .append("  * Usuario: ").append(codigo).append("\n")
-                      .append("  * Email: ").append(email).append("\n")
-                      .append("  * Foto: ").append(foto).append("\n\n");
+                            .append("  * CI: ").append(s.getCi()).append("\n")
+                            .append("  * Nombre: ").append(s.getNombres()).append(" ").append(s.getApellidos())
+                            .append("\n")
+                            .append("  * Dirección: ")
+                            .append(s.getDireccion() != null ? s.getDireccion() : "No especificada").append("\n")
+                            .append("  * Género: ").append(s.getGenero() != null ? s.getGenero() : "No especificado")
+                            .append("\n")
+                            .append("  * Teléfono: ")
+                            .append(s.getTelefono() != null ? s.getTelefono() : "No especificado").append("\n")
+                            .append("  * Fecha Nacimiento: ")
+                            .append(s.getFechaNacimiento() != null ? s.getFechaNacimiento() : "No especificada")
+                            .append("\n")
+                            .append("  * Fecha Contratación: ")
+                            .append(s.getFechaContratacion() != null ? s.getFechaContratacion() : "No especificada")
+                            .append("\n")
+                            .append("  * Usuario: ").append(codigo).append("\n")
+                            .append("  * Email: ").append(email).append("\n")
+                            .append("  * Foto: ").append(foto).append("\n\n");
                 }
             }
             sendResponse(fromEmail, "Listado de Secretarias", sb.toString(), base64Images.toArray(new String[0]));
@@ -310,7 +318,7 @@ public class SecretariaService {
         try {
             java.net.URL url = java.net.URI.create(urlStr).toURL();
             try (java.io.InputStream in = url.openStream();
-                 java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
                 byte[] buffer = new byte[1024];
                 int n;
                 while (-1 != (n = in.read(buffer))) {
