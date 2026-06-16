@@ -6,9 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Paciente;
 import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
+import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.PacienteRepository;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
+import smail.sistema_mail_OdontoCool.repositories.RolRepository;
 import smail.sistema_mail_OdontoCool.validations.PacienteVal;
 
 import java.io.IOException;
@@ -26,6 +28,9 @@ public class PacienteService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private RolRepository rolRepository;
 
     @Autowired
     private CloudinaryServices cloudinaryServices;
@@ -133,6 +138,7 @@ public class PacienteService {
             u.setFotoUrl(fotoUrl);
             u.setEstado("ACTIVO");
             u.setPersona(persona);
+            rolRepository.findByNombreIgnoreCase("PACIENTE").ifPresent(u::setRol);
             usuarioRepository.save(u);
 
             sendResponse(fromEmail, "Éxito", "Paciente " + pac.getNombres() + " registrado correctamente.");

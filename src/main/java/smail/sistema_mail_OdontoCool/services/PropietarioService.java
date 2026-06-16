@@ -6,9 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Propietario;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
+import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.PropietarioRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
+import smail.sistema_mail_OdontoCool.repositories.RolRepository;
 import smail.sistema_mail_OdontoCool.validations.PropietarioVal;
 
 import java.io.IOException;
@@ -27,6 +29,9 @@ public class PropietarioService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private RolRepository rolRepository;
 
     @Autowired
     private CloudinaryServices cloudinaryServices;
@@ -124,6 +129,7 @@ public class PropietarioService {
             u.setFotoUrl(fotoUrl);
             u.setEstado("ACTIVO");
             u.setPersona(persona);
+            rolRepository.findByNombreIgnoreCase("PROPIETARIO").ifPresent(u::setRol);
             usuarioRepository.save(u);
 
             sendResponse(fromEmail, "Éxito", "Propietario(a) " + prop.getNombres() + " registrado(a) correctamente.");

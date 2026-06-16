@@ -10,9 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Secretaria;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
+import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
+import smail.sistema_mail_OdontoCool.repositories.RolRepository;
 import smail.sistema_mail_OdontoCool.validations.SecretariaVal;
 
 @Service
@@ -26,6 +28,9 @@ public class SecretariaService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private RolRepository rolRepository;
 
     @Autowired
     private CloudinaryServices cloudinaryServices;
@@ -132,6 +137,7 @@ public class SecretariaService {
             u.setFotoUrl(fotoUrl);
             u.setEstado("ACTIVO");
             u.setPersona(persona);
+            rolRepository.findByNombreIgnoreCase("SECRETARIA").ifPresent(u::setRol);
             usuarioRepository.save(u);
 
             sendResponse(fromEmail, "Éxito", "Secretaria " + s.getNombres() + " registrada correctamente.");

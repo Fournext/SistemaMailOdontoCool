@@ -93,6 +93,15 @@ public class CommandProcessorService {
     @Autowired
     private RecetaRecomendacionService RecetaRecomendacionService;
 
+    @Autowired
+    private RolService rolService;
+
+    @Autowired
+    private ModuloService moduloService;
+
+    @Autowired
+    private AsignacionPermisoService asignacionPermisoService;
+
     // Regex mejorada: permite espacios entre el comando y los corchetes
     private static final Pattern COMMAND_PATTERN = Pattern.compile(
             "^\\s*([A-Z]+)\\s*(?:\\[\\s*(.*)\\s*\\])?\\s*$",
@@ -249,10 +258,20 @@ public class CommandProcessorService {
                 // El servicio de Recetas/Recomendaciones no maneja imágenes, por lo que se pasa
                 // una lista vacía
                 RecetaRecomendacionService.handle(action, params, fromEmail);
+                break;
             case "DRE":
                 // El servicio de Detalles de Recomendación no maneja imágenes, por lo que se
                 // pasa una lista vacía
                 DetalleRecomendacionService.handle(action, params, fromEmail);
+                break;
+            case "ROL":
+                rolService.handle(action, params, fromEmail);
+                break;
+            case "MOD":
+                moduloService.handle(action, params, fromEmail);
+                break;
+            case "PER":
+                asignacionPermisoService.handle(action, params, fromEmail);
                 break;
             default:
                 sendResponse(fromEmail, "Error", "Entidad no reconocida: " + entity);

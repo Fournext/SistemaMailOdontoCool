@@ -13,10 +13,12 @@ import smail.sistema_mail_OdontoCool.entities.Doctor;
 import smail.sistema_mail_OdontoCool.entities.Especialidad;
 import smail.sistema_mail_OdontoCool.entities.Persona;
 import smail.sistema_mail_OdontoCool.entities.Usuario;
+import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
 import smail.sistema_mail_OdontoCool.repositories.EspecialidadRepository;
 import smail.sistema_mail_OdontoCool.repositories.PersonaRepository;
 import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
+import smail.sistema_mail_OdontoCool.repositories.RolRepository;
 import smail.sistema_mail_OdontoCool.validations.DoctorVal;
 
 @Service
@@ -30,6 +32,9 @@ public class DoctorService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private RolRepository rolRepository;
 
     @Autowired
     private CloudinaryServices cloudinaryServices;
@@ -148,6 +153,7 @@ public class DoctorService {
             u.setFotoUrl(fotoUrl);
             u.setEstado("ACTIVO");
             u.setPersona(persona);
+            rolRepository.findByNombreIgnoreCase("DOCTOR").ifPresent(u::setRol);
             usuarioRepository.save(u);
 
             sendResponse(fromEmail, "Éxito", "Doctor(a) " + d.getNombres() + " registrado(a) correctamente.");
