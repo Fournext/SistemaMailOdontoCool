@@ -5,14 +5,19 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+
+import smail.sistema_mail_OdontoCool.entities.Diagnostico;
 import smail.sistema_mail_OdontoCool.entities.HistorialClinico;
 import smail.sistema_mail_OdontoCool.entities.Paciente;
+import smail.sistema_mail_OdontoCool.entities.SesionTratamiento;
+import smail.sistema_mail_OdontoCool.entities.Tratamiento;
 import smail.sistema_mail_OdontoCool.repositories.HistorialClinicoRepository;
 import smail.sistema_mail_OdontoCool.repositories.PacienteRepository;
 import smail.sistema_mail_OdontoCool.validations.HistorialClinicoVal;
 
 @Service
+@Transactional
 public class HistorialClinicoService {
     @Autowired
     private HistorialClinicoRepository historialClinicoRepository;
@@ -105,16 +110,24 @@ public class HistorialClinicoService {
                         "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
-            if (params.size() == 1) {
 
-                switch (params.get(0)) {
-                    case "*":
-                        sb = listAll();
-                        break;
-                    default:
-                        sendResponse(fromEmail, "Error", "Listado no permitido para Historiales Clínicos.");
+            String term = params.get(0).trim();
+            if ("*".equals(term)) {
+                List<HistorialClinico> lista = historialClinicoRepository.findAll();
+                if (lista.isEmpty()) {
+                    sb.append("No se encontraron Historiales Clínicos registrados.");
+                } else if (lista.size() == 1) {
+                    sb = formatSingleHistorial(lista.get(0));
+                } else {
+                    sb = listMultiple(lista);
                 }
-
+            } else {
+                HistorialClinico h = historialClinicoRepository.findByCodigoHistorial(term);
+                if (h != null) {
+                    sb = formatSingleHistorial(h);
+                } else {
+                    sb.append("No se encontró ningún Historial Clínico con el código: ").append(term);
+                }
             }
             sendResponse(fromEmail, "Listado de Historiales Clínicos", sb.toString());
         } catch (Exception e) {
@@ -122,47 +135,141 @@ public class HistorialClinicoService {
         }
     }
 
-    private StringBuilder listAll() {
-        List<HistorialClinico> lista = historialClinicoRepository.findAll();
+    private StringBuilder formatSingleHistorial(HistorialClinico h) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Detalle de Historial Clínico:\n\n");
+        sb.append("* Código Historial: ").append(h.getCodigoHistorial()).append("\n");
+        sb.append("* Paciente: ")
+                .append(h.getPaciente() != null
+                        ? h.getPaciente().getNombres() + " " + h.getPaciente().getApellidos() + " (CI: "
+                                + h.getPaciente().getCi() + ")"
+                        : "N/A")
+                .append("\n");
+        sb.append("* Motivo Apertura: ").append(h.getMotivoApertura() != null ? h.getMotivoApertura() : "Ninguno")
+                .append("\n");
+        sb.append("* Alergias: ").append(h.getAlergias() != null ? h.getAlergias() : "Ninguna").append("\n");
+        sb.append("* Antecedentes Médicos: ")
+                .append(h.getAntencedentesMedicos() != null ? h.getAntencedentesMedicos() : "Ninguno").append("\n");
+        sb.append("* Enfermedades de Base: ")
+                .append(h.getEnfermedadesBase() != null ? h.getEnfermedadesBase() : "Ninguna").append("\n");
+        sb.append("* Fecha Apertura: ").append(h.getFechaApertura() != null ? h.getFechaApertura().toString() : "N/A")
+                .append("\n");
+        sb.append("* Fecha Actualización: ")
+                .append(h.getFechaActualizacion() != null ? h.getFechaActualizacion().toString() : "N/A").append("\n");
+        sb.append("* Observaciones Generales: ")
+                .append(h.getObservacionesGenerales() != null ? h.getObservacionesGenerales() : "Ninguna").append("\n");
+        sb.append("* Estado: ").append(h.getEstado() != null ? h.getEstado() : "ACTIVO").append("\n\n");
+
+        if (h.getTratamientos() == null || h.getTratamientos().isEmpty()) {
+            sb.append("No tiene tratamientos registrados.\n\n");
+        } else {
+            sb.append("Tratamientos registrados:\n");
+            for (Tratamiento t : h.getTratamientos()) {
+                sb.append("  - Tratamiento ID: ").append(t.getId()).append("\n");
+                sb.append("    * Objetivo: ")
+                        .append(t.getObjetivoTratamiento() != null ? t.getObjetivoTratamiento() : "N/A").append("\n");
+                sb.append("    * Observación: ").append(t.getObservacion() != null ? t.getObservacion() : "Ninguna")
+                        .append("\n");
+                sb.append("    * Estado: ").append(t.getEstado() != null ? t.getEstado() : "N/A").append("\n");
+                sb.append("    * Fecha Inicio: ")
+                        .append(t.getFechaInicio() != null ? t.getFechaInicio().toString() : "N/A").append("\n");
+                sb.append("    * Fecha Fin Estimada: ")
+                        .append(t.getFechaFin() != null ? t.getFechaFin().toString() : "N/A").append("\n");
+                sb.append("    * Fecha Fin Real: ")
+                        .append(t.getFechaFinReal() != null ? t.getFechaFinReal().toString() : "N/A").append("\n");
+
+                // Diagnostico d = t.getDiagnostico();
+                // if (d != null) {
+                // sb.append(" * Diagnóstico asociado:\n");
+                // sb.append(" - ID: ").append(d.getId()).append("\n");
+                // sb.append(" - Síntomas: ").append(d.getSintomas() != null ? d.getSintomas() :
+                // "N/A")
+                // .append("\n");
+                // sb.append(" - Tipo: ").append(d.getTipoDiagnostico() != null ?
+                // d.getTipoDiagnostico() : "N/A")
+                // .append("\n");
+                // sb.append(" - Gravedad: ").append(d.getGravedad() != null ? d.getGravedad() :
+                // "N/A")
+                // .append("\n");
+                // sb.append(" - Observaciones: ")
+                // .append(d.getObservaciones() != null ? d.getObservaciones() :
+                // "Ninguna").append("\n");
+                // } else {
+                // sb.append(" * Diagnóstico asociado: Ninguno\n");
+                // }
+                sb.append("\n");
+            }
+        }
+
+        List<Diagnostico> diags = new java.util.ArrayList<>();
+        // if (h.getTratamientos() != null) {
+        // for (Tratamiento t : h.getTratamientos()) {
+        // if (t.getDiagnostico() != null) {
+        // diags.add(t.getDiagnostico());
+        // }
+        // }
+        // }
+
+        if (diags.isEmpty()) {
+            sb.append("No tiene diagnósticos registrados.\n");
+        } else {
+            sb.append("Diagnósticos registrados:\n");
+            for (Diagnostico d : diags) {
+                sb.append("  - Diagnóstico ID: ").append(d.getId()).append("\n");
+                sb.append("    * Síntomas: ").append(d.getSintomas() != null ? d.getSintomas() : "N/A").append("\n");
+                sb.append("    * Tipo: ").append(d.getTipoDiagnostico() != null ? d.getTipoDiagnostico() : "N/A")
+                        .append("\n");
+                sb.append("    * Gravedad: ").append(d.getGravedad() != null ? d.getGravedad() : "N/A").append("\n");
+                sb.append("    * Observaciones: ")
+                        .append(d.getObservaciones() != null ? d.getObservaciones() : "Ninguna").append("\n");
+                if (d.getCita() != null) {
+                    sb.append("    * Cita ID: ").append(d.getCita().getIdCita()).append(" (Fecha: ")
+                            .append(d.getCita().getFechaCita()).append(")\n");
+                }
+                sb.append("\n");
+            }
+        }
+        return sb;
+    }
+
+    private StringBuilder listMultiple(List<HistorialClinico> lista) {
         StringBuilder sb = new StringBuilder("Lista de Historiales Clínicos:\n\n");
 
-        String separator = "+" 
-            + "-".repeat(16) + "+" 
-            + "-".repeat(13) + "+" 
-            + "-".repeat(22) + "+" 
-            + "-".repeat(17) + "+" 
-            + "-".repeat(17) + "+" 
-            + "-".repeat(17) + "+" 
-            + "-".repeat(13) + "+" 
-            + "-".repeat(13) + "+" 
-            + "-".repeat(27) + "+\n";
+        String separator = "+"
+                + "-".repeat(16) + "+"
+                + "-".repeat(13) + "+"
+                + "-".repeat(22) + "+"
+                + "-".repeat(17) + "+"
+                + "-".repeat(17) + "+"
+                + "-".repeat(17) + "+"
+                + "-".repeat(13) + "+"
+                + "-".repeat(13) + "+"
+                + "-".repeat(27) + "+\n";
 
         String header = String.format("| %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
-            pad("Cod. Historial", 14),
-            pad("Paciente CI", 11),
-            pad("Motivo Apertura", 20),
-            pad("Alergias", 15),
-            pad("Antecedentes", 15),
-            pad("Enf. Base", 15),
-            pad("F. Apertura", 11),
-            pad("F. Act.", 11),
-            pad("Obs. Generales", 25)
-        );
+                pad("Cod. Historial", 14),
+                pad("Paciente CI", 11),
+                pad("Motivo Apertura", 20),
+                pad("Alergias", 15),
+                pad("Antecedentes", 15),
+                pad("Enf. Base", 15),
+                pad("F. Apertura", 11),
+                pad("F. Act.", 11),
+                pad("Obs. Generales", 25));
 
         sb.append(separator).append(header).append(separator);
 
         for (HistorialClinico h : lista) {
             String row = String.format("| %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
-                pad(h.getCodigoHistorial(), 14),
-                pad(h.getPaciente() != null ? h.getPaciente().getCi() : "N/A", 11),
-                pad(h.getMotivoApertura(), 20),
-                pad(h.getAlergias(), 15),
-                pad(h.getAntencedentesMedicos(), 15),
-                pad(h.getEnfermedadesBase(), 15),
-                pad(h.getFechaApertura() != null ? h.getFechaApertura().toString() : "N/A", 11),
-                pad(h.getFechaActualizacion() != null ? h.getFechaActualizacion().toString() : "N/A", 11),
-                pad(h.getObservacionesGenerales(), 25)
-            );
+                    pad(h.getCodigoHistorial(), 14),
+                    pad(h.getPaciente() != null ? h.getPaciente().getCi() : "N/A", 11),
+                    pad(h.getMotivoApertura(), 20),
+                    pad(h.getAlergias(), 15),
+                    pad(h.getAntencedentesMedicos(), 15),
+                    pad(h.getEnfermedadesBase(), 15),
+                    pad(h.getFechaApertura() != null ? h.getFechaApertura().toString() : "N/A", 11),
+                    pad(h.getFechaActualizacion() != null ? h.getFechaActualizacion().toString() : "N/A", 11),
+                    pad(h.getObservacionesGenerales(), 25));
             sb.append(row);
         }
 
@@ -171,7 +278,8 @@ public class HistorialClinicoService {
     }
 
     private String pad(String val, int width) {
-        if (val == null) val = "";
+        if (val == null)
+            val = "";
         val = val.trim();
         if (val.length() > width) {
             return val.substring(0, width - 3) + "...";
