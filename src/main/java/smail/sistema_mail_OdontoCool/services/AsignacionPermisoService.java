@@ -15,6 +15,7 @@ import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.AsignacionPermisoRepository;
 import smail.sistema_mail_OdontoCool.repositories.ModuloRepository;
 import smail.sistema_mail_OdontoCool.repositories.RolRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class AsignacionPermisoService {
@@ -27,6 +28,9 @@ public class AsignacionPermisoService {
 
     @Autowired
     private ModuloRepository moduloRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
     private SmtpClientService smtpService;
@@ -73,8 +77,15 @@ public class AsignacionPermisoService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 3) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para Permiso. Se requieren nombre, idRol e idModulo.");
+                sendResponse(fromEmail, "Error",
+                        "Faltan parámetros para Permiso. Se requieren nombre, idRol e idModulo.");
                 return;
             }
 
@@ -115,9 +126,11 @@ public class AsignacionPermisoService {
             final Rol finalRol = rol;
             final Modulo finalModulo = modulo;
             boolean existe = asignacionPermisoRepository.findAll().stream()
-                    .anyMatch(p -> p.getRol().getIdRol().equals(finalRol.getIdRol()) && p.getModulo().getIdModulo().equals(finalModulo.getIdModulo()));
+                    .anyMatch(p -> p.getRol().getIdRol().equals(finalRol.getIdRol())
+                            && p.getModulo().getIdModulo().equals(finalModulo.getIdModulo()));
             if (existe) {
-                sendResponse(fromEmail, "Error", "Ya existe un permiso asignado al rol " + rol.getNombre() + " para el módulo " + modulo.getNombre());
+                sendResponse(fromEmail, "Error", "Ya existe un permiso asignado al rol " + rol.getNombre()
+                        + " para el módulo " + modulo.getNombre());
                 return;
             }
 
@@ -128,7 +141,8 @@ public class AsignacionPermisoService {
             permiso.setFechaFinalizacion(fechaFinalizacion);
             asignacionPermisoRepository.save(permiso);
 
-            sendResponse(fromEmail, "Éxito", "Permiso '" + nombre + "' asignado correctamente con ID: " + permiso.getIdPermiso());
+            sendResponse(fromEmail, "Éxito",
+                    "Permiso '" + nombre + "' asignado correctamente con ID: " + permiso.getIdPermiso());
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al registrar permiso: " + e.getMessage());
         }
@@ -136,6 +150,12 @@ public class AsignacionPermisoService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.isEmpty() || !params.get(0).equals("*")) {
                 sendResponse(fromEmail, "Error", "Acción de listado incorrecta. Use '*' para listar todos.");
                 return;
@@ -158,8 +178,15 @@ public class AsignacionPermisoService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 4) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar Permiso. Se requieren idPermiso, nombre, idRol e idModulo.");
+                sendResponse(fromEmail, "Error",
+                        "Faltan parámetros para actualizar Permiso. Se requieren idPermiso, nombre, idRol e idModulo.");
                 return;
             }
 
@@ -207,9 +234,12 @@ public class AsignacionPermisoService {
             final Rol finalRol = rol;
             final Modulo finalModulo = modulo;
             boolean existe = asignacionPermisoRepository.findAll().stream()
-                    .anyMatch(p -> !p.getIdPermiso().equals(idPermiso) && p.getRol().getIdRol().equals(finalRol.getIdRol()) && p.getModulo().getIdModulo().equals(finalModulo.getIdModulo()));
+                    .anyMatch(p -> !p.getIdPermiso().equals(idPermiso)
+                            && p.getRol().getIdRol().equals(finalRol.getIdRol())
+                            && p.getModulo().getIdModulo().equals(finalModulo.getIdModulo()));
             if (existe) {
-                sendResponse(fromEmail, "Error", "Ya existe otra asignación de permiso activa al rol " + rol.getNombre() + " para el módulo " + modulo.getNombre());
+                sendResponse(fromEmail, "Error", "Ya existe otra asignación de permiso activa al rol " + rol.getNombre()
+                        + " para el módulo " + modulo.getNombre());
                 return;
             }
 
@@ -228,6 +258,12 @@ public class AsignacionPermisoService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.isEmpty()) {
                 sendResponse(fromEmail, "Error", "Falta parámetro idPermiso para eliminar.");
                 return;

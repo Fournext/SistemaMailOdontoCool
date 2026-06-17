@@ -96,6 +96,12 @@ public class BoletaPagoService {
     @Transactional
     private void generate(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parámetros: Descuento[0], DetallesRaw[1], CI_Paciente[2], CI_Secretaria[3],
             // Nombre_ModoPago[4], CantCuotas[5], PlazoCuota[6], MetodoPago[7],
             if (params.size() < 8) {
@@ -247,6 +253,13 @@ public class BoletaPagoService {
     @Transactional
     private void generarPagoCuota(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria o Paciente
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA")
+                    || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 3) {
                 sendResponse(fromEmail, "Error",
                         "Error al generar pago de cuota: Parámetros insuficientes. Se requieren 3 (ID_Boleta, Nro_Cuota, MetodoPago).");
@@ -337,6 +350,12 @@ public class BoletaPagoService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.isEmpty()) {
                 sendResponse(fromEmail, "Error", "Falta el ID de la boleta de pago.");
                 return;
@@ -361,6 +380,13 @@ public class BoletaPagoService {
     @Transactional(readOnly = true)
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria o Paciente
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA")
+                    || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.isEmpty()) {
                 sendResponse(fromEmail, "Error", "Falta especificar el CI del paciente para listar sus boletas.");
                 return;
@@ -469,6 +495,13 @@ public class BoletaPagoService {
 
     private void enviarComprobante(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
+            // Verificar si es Secretaria o Paciente
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA")
+                    || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametros: ID_BoletaPago[0], Nro_Cuota[1],comprobante[img1]
             if (params.size() < 2 || imagenesBase64.size() < 1) {
                 sendResponse(fromEmail, "Error",

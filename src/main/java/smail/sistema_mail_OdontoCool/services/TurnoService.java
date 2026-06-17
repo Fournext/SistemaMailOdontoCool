@@ -9,12 +9,15 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Turno;
 import smail.sistema_mail_OdontoCool.repositories.TurnoRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class TurnoService {
 
     @Autowired
     private TurnoRepository turnoRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
     @Autowired
     private SmtpClientService smtpService;
 
@@ -40,7 +43,13 @@ public class TurnoService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
-            //Parametros: nombre[0], hora_inicio[1], hora_fin[2], estado[3]
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
+            // Parametros: nombre[0], hora_inicio[1], hora_fin[2], estado[3]
             if (params.size() < 4) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para registrar un turno.");
                 return;
@@ -62,7 +71,8 @@ public class TurnoService {
         try {
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
             if (params.size() == 1) {
@@ -98,10 +108,17 @@ public class TurnoService {
 
     private void update(List<String> params, String fromEmail) {
         try {
-            //Parametros: id[0], nombre[1], hora_inicio[2], hora_fin[3], estado[4]
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
+            // Parametros: id[0], nombre[1], hora_inicio[2], hora_fin[3], estado[4]
             // if (params.size() < 5) {
-            //     sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar un turno.");
-            //     return;
+            // sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar un
+            // turno.");
+            // return;
             // }
             Long id = Long.parseLong(params.get(0));
             String nombre = params.get(1);
@@ -127,7 +144,12 @@ public class TurnoService {
 
     private void delete(List<String> params, String fromEmail) {
         try {
-
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al eliminar turno: " + e.getMessage());
         }

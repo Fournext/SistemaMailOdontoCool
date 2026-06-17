@@ -17,6 +17,7 @@ import smail.sistema_mail_OdontoCool.entities.Turno;
 import smail.sistema_mail_OdontoCool.repositories.AsignacionTurnoSecretariaRepository;
 import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
 import smail.sistema_mail_OdontoCool.repositories.TurnoRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class AsignacionTurnoSecretariaService {
@@ -29,6 +30,8 @@ public class AsignacionTurnoSecretariaService {
     private AsignacionTurnoSecretariaRepository AsignacionTurnoSecretariaRepository;
     @Autowired
     private SecretariaRepository SecretariaRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -42,13 +45,19 @@ public class AsignacionTurnoSecretariaService {
                 update(params, fromEmail);
                 break;
             default:
-                sendResponse(fromEmail, "Error", "Acción no permitida para Doctores.");
+                sendResponse(fromEmail, "Error", "Acción no permitida para asignación de turnos a secretarias.");
         }
     }
 
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es sercretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Validar parámetros
             if (params.size() < 5) {
                 sendResponse(fromEmail, "Error", "Parámetros insuficientes para asignar turno a secretaria.");
@@ -125,6 +134,12 @@ public class AsignacionTurnoSecretariaService {
 
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es sercretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 7) {
                 sendResponse(fromEmail, "Error",
                         "Parámetros insuficientes para modificar asignación de turno a secretaria.");

@@ -11,6 +11,7 @@ import smail.sistema_mail_OdontoCool.entities.CuotaMulta;
 import smail.sistema_mail_OdontoCool.entities.BoletaPago;
 import smail.sistema_mail_OdontoCool.repositories.CuotaBoletaRepository;
 import smail.sistema_mail_OdontoCool.repositories.CuotaMultaRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.repositories.BoletaPagoRepository;
 
 @Service
@@ -24,6 +25,9 @@ public class CuotaMultaService {
 
     @Autowired
     private CuotaBoletaRepository cuotaBoletaRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
     private SmtpClientService smtpService;
@@ -44,6 +48,12 @@ public class CuotaMultaService {
 
     private void asignarCuotaMulta(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametreos:ID_BOletaPago[0], Nro Cuota[1], Monto[2], Motivo[3]
             if (params.size() < 4) {
                 sendResponse(fromEmail, "Error", "Error al asignar cuota multa: Faltan parámetros.");
@@ -97,6 +107,12 @@ public class CuotaMultaService {
 
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametros:Id_BoletaPago[0], Nro_Cuota[1]
             if (params.size() < 2) {
                 sendResponse(fromEmail, "Error", "Error al eliminar una cuota multa: Faltan parámetros.");

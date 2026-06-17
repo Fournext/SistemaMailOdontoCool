@@ -145,7 +145,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             if (usuarioRepository.findByPersona_Ci(propietarioCi).isEmpty()) {
                 Usuario usuario = new Usuario();
                 usuario.setCodigoUsuario(codUsuario);
-                usuario.setCorreoElectronico("biofarmfarmaciaquimica@gmail.com");
+                usuario.setCorreoElectronico("sebastianzc041107@gmail.com");
                 usuario.setContraseña(passwordService.hashPassword("admin123"));
                 usuario.setEstado("ACTIVO");
                 usuario.setFotoUrl(
@@ -162,7 +162,8 @@ public class DatabaseSeeder implements CommandLineRunner {
                 if (usuario.getRol() == null) {
                     usuario.setRol(rolPropietario);
                     usuarioRepository.save(usuario);
-                    System.out.println("====== SEED: Rol PROPIETARIO asignado al usuario existente de CI 9999999 ======");
+                    System.out
+                            .println("====== SEED: Rol PROPIETARIO asignado al usuario existente de CI 9999999 ======");
                 }
             });
         }

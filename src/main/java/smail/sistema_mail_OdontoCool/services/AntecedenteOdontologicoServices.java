@@ -14,6 +14,7 @@ import smail.sistema_mail_OdontoCool.entities.DetalleAntecedenteOdontologico;
 import smail.sistema_mail_OdontoCool.entities.HistorialClinico;
 import smail.sistema_mail_OdontoCool.repositories.AntecedenteOdontologicoRepository;
 import smail.sistema_mail_OdontoCool.repositories.HistorialClinicoRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.AntecedenteOdontologicoVal;
 
 @Service
@@ -27,6 +28,9 @@ public class AntecedenteOdontologicoServices {
 
     @Autowired
     private HistorialClinicoRepository historialClinicoRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
     private SmtpClientService smtpService;
@@ -55,6 +59,12 @@ public class AntecedenteOdontologicoServices {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametros: ObservacionGeneral[0], DetalleAntecedentes[1], CodHistorial[2]
             if (params.size() < 3) {
                 sendResponse(fromEmail, "Error",
@@ -110,6 +120,13 @@ public class AntecedenteOdontologicoServices {
     @Transactional
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor o Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR")
+                    || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
                 sendResponse(fromEmail, "Error",
@@ -161,6 +178,12 @@ public class AntecedenteOdontologicoServices {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametros: idAntecedente[0], ObservacionGeneral[1], DetalleAntecedentes[2],
             // CodHistorial[3]
             if (params.size() < 4) {

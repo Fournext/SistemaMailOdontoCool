@@ -13,6 +13,7 @@ import smail.sistema_mail_OdontoCool.entities.EstadoCita;
 import smail.sistema_mail_OdontoCool.repositories.AsignacionEstadoCitaRepository;
 import smail.sistema_mail_OdontoCool.repositories.CitaRepository;
 import smail.sistema_mail_OdontoCool.repositories.EstadoCitaRepotory;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.EstadoCitaVal;
 
 @Service
@@ -29,6 +30,9 @@ public class EstadoCitaServices {
 
     @Autowired
     private AsignacionEstadoCitaRepository asignacionEstadoCitaRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
     private SmtpClientService smtpService;
@@ -58,6 +62,12 @@ public class EstadoCitaServices {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametros: Nombre[0], Descripcion[1]
             if (params.size() < 2) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para Estado de Cita. Se requieren 2.");
@@ -84,6 +94,13 @@ public class EstadoCitaServices {
     @Transactional
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario o Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO")
+                    || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
                 sendResponse(fromEmail, "Error",
@@ -120,7 +137,12 @@ public class EstadoCitaServices {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
-
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validacion = estadoCitaVal.updateValid(params);
 
             if (!validacion.isEmpty()) {
@@ -148,6 +170,12 @@ public class EstadoCitaServices {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             Long idEstadoCita = Long.valueOf(params.get(0));
             EstadoCita estadoCita = estadoCitaRepotory.findById(idEstadoCita).orElse(null);
             if (estadoCita == null) {
@@ -163,6 +191,12 @@ public class EstadoCitaServices {
 
     private void asignarEstado(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametros: IdCita[0], NombreEstado[1], Observaciones
             if (params.size() < 3) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para asignar Estado de Cita. Se requieren 2.");

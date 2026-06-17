@@ -14,6 +14,7 @@ import smail.sistema_mail_OdontoCool.entities.Turno;
 import smail.sistema_mail_OdontoCool.repositories.AsignacionTurnoDoctorRepository;
 import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
 import smail.sistema_mail_OdontoCool.repositories.TurnoRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.AsignacionTurnoDoctorVal;
 
 @Service
@@ -23,6 +24,8 @@ public class AsignacionTurnoDoctorService {
     private SmtpClientService smtpService;
     @Autowired
     private DoctorRepository DoctorRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
     @Autowired
     private TurnoRepository TurnoRepository;
     @Autowired
@@ -50,6 +53,12 @@ public class AsignacionTurnoDoctorService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Validar parámetros
             String valMsg = asignacionTurnoDoctorVal.insertValid(params);
             if (!valMsg.isEmpty()) {
@@ -129,6 +138,12 @@ public class AsignacionTurnoDoctorService {
 
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String valMsg = asignacionTurnoDoctorVal.updateValid(params);
             if (!valMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error de Validación", valMsg);

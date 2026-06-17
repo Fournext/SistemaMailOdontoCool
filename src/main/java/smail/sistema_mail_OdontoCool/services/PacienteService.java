@@ -64,6 +64,14 @@ public class PacienteService {
     @Transactional
     private void insert(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
+            // Verificar si es secretario o paciente
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA") ||
+                    usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
+
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
             // FNac[6], ContactoEmerg[7], TelfEmerg[8], CORREO[9], PASS[10]
             if (params.size() < 11) {
@@ -160,6 +168,13 @@ public class PacienteService {
             List<Paciente> lista;
 
             if ("*".equals(query)) {
+                // Verificar si es Secretaria o Propietario
+                boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA")
+                        || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+                if (!exists) {
+                    sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                    return;
+                }
                 lista = pacienteRepository.findAll();
                 sb.append("Lista de Pacientes:\n\n");
             } else {
@@ -225,6 +240,13 @@ public class PacienteService {
     @Transactional
     private void update(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
+            // Verificar si es secretario o paciente
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA") ||
+                    usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
 
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
             // FNac[6], ContactoEmerg[7], TelfEmerg[8], CORREO[9], PASS[10]
@@ -287,6 +309,13 @@ public class PacienteService {
 
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es secretario o paciente
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA") ||
+                    usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String ci = params.get(0);
             Paciente pac = pacienteRepository.findById(ci).orElse(null);
 

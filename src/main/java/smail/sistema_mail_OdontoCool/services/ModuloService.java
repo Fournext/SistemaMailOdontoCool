@@ -10,12 +10,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import smail.sistema_mail_OdontoCool.entities.Modulo;
 import smail.sistema_mail_OdontoCool.repositories.ModuloRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class ModuloService {
 
     @Autowired
     private ModuloRepository moduloRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
     private SmtpClientService smtpService;
@@ -62,6 +66,12 @@ public class ModuloService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.isEmpty()) {
                 sendResponse(fromEmail, "Error", "Falta parámetro 'nombre' para registrar Módulo.");
                 return;
@@ -78,7 +88,8 @@ public class ModuloService {
             modulo.setNombre(nombre);
             moduloRepository.save(modulo);
 
-            sendResponse(fromEmail, "Éxito", "Módulo " + nombre + " registrado correctamente con ID: " + modulo.getIdModulo());
+            sendResponse(fromEmail, "Éxito",
+                    "Módulo " + nombre + " registrado correctamente con ID: " + modulo.getIdModulo());
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al registrar módulo: " + e.getMessage());
         }
@@ -86,6 +97,12 @@ public class ModuloService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.isEmpty() || !params.get(0).equals("*")) {
                 sendResponse(fromEmail, "Error", "Acción de listado incorrecta. Use '*' para listar todos.");
                 return;
@@ -106,8 +123,15 @@ public class ModuloService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 2) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar Módulo. Se requieren idModulo y nombre.");
+                sendResponse(fromEmail, "Error",
+                        "Faltan parámetros para actualizar Módulo. Se requieren idModulo y nombre.");
                 return;
             }
 
@@ -138,6 +162,12 @@ public class ModuloService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.isEmpty()) {
                 sendResponse(fromEmail, "Error", "Falta parámetro idModulo para eliminar.");
                 return;

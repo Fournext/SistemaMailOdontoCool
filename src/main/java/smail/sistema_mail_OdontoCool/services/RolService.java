@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import smail.sistema_mail_OdontoCool.entities.Rol;
 import smail.sistema_mail_OdontoCool.repositories.RolRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class RolService {
@@ -19,6 +20,9 @@ public class RolService {
 
     @Autowired
     private SmtpClientService smtpService;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Transactional(readOnly = true)
     public List<Rol> findAll() {
@@ -62,6 +66,12 @@ public class RolService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 2) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para Rol. Se requieren al menos nombre y estado.");
                 return;
@@ -90,6 +100,12 @@ public class RolService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.isEmpty() || !params.get(0).equals("*")) {
                 sendResponse(fromEmail, "Error", "Acción de listado incorrecta. Use '*' para listar todos.");
                 return;
@@ -110,8 +126,15 @@ public class RolService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 3) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar Rol. Se requieren idRol, nombre y estado.");
+                sendResponse(fromEmail, "Error",
+                        "Faltan parámetros para actualizar Rol. Se requieren idRol, nombre y estado.");
                 return;
             }
 
@@ -146,6 +169,12 @@ public class RolService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.isEmpty()) {
                 sendResponse(fromEmail, "Error", "Falta parámetro idRol para eliminar.");
                 return;

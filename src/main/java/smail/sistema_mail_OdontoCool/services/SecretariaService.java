@@ -63,6 +63,12 @@ public class SecretariaService {
     @Transactional
     private void insert(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
             // FNac[6], FContrat[7], [EMAIL_ADDRESS][8], [PASSWORD][9]
             if (params.size() < 10) {
@@ -147,6 +153,12 @@ public class SecretariaService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si no es paciente
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+            if (exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() == 0 || params.get(0).trim().isEmpty()) {
                 sendResponse(fromEmail, "Error",
                         "Falta especificar tipo de listado o término de búsqueda. Verifique el formato de comandos en la ayuda (HELP).");
@@ -222,6 +234,12 @@ public class SecretariaService {
     @Transactional
     private void update(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
 
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Dir[3], Gen[4], Telf[5],
             // FNac[6], FContrat[7], [EMAIL_ADDRESS][8], [PASSWORD][9]
@@ -282,6 +300,12 @@ public class SecretariaService {
 
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String ci = params.get(0);
             Secretaria s = secretariaRepository.findById(ci).orElse(null);
 

@@ -19,6 +19,7 @@ import smail.sistema_mail_OdontoCool.validations.CitaVal;
 import smail.sistema_mail_OdontoCool.repositories.HistorialClinicoRepository;
 import smail.sistema_mail_OdontoCool.repositories.PacienteRepository;
 import smail.sistema_mail_OdontoCool.repositories.SecretariaRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.repositories.DoctorRepository;
 
 @Service
@@ -50,6 +51,9 @@ public class CitaServices {
     @Autowired
     private DoctorRepository doctorRepository;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     public void handle(String actions, List<String> params, String fromEmail) {
         switch (actions) {
             case "INS":
@@ -75,6 +79,13 @@ public class CitaServices {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria o Paciente
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE")
+                    || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametros: FechaCita[0], HoraInicio[1], HoraFin[2], Mofivo[3],
             // Observacion[4], CI_Secretaria[5], CI_Paciente[6], CodigoHistorial[7],
             // CI_Doctor[8]
@@ -121,9 +132,22 @@ public class CitaServices {
             List<Cita> listado = new java.util.ArrayList<>();
 
             if ("*".equals(query)) {
+                // Verificar si es Secretaria
+                boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+                if (!exists) {
+                    sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                    return;
+                }
                 listado = citaRepository.findAllWithAsignaciones();
                 sb.append("Lista de Citas:\n\n");
             } else {
+                // Verificar si es Secretaria o Paciente
+                boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE")
+                        || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+                if (!exists) {
+                    sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                    return;
+                }
                 // Intentar buscar por ID de cita
                 try {
                     Long idCita = Long.parseLong(query);
@@ -245,6 +269,12 @@ public class CitaServices {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 7) {
                 sendResponse(fromEmail, "Error",
                         "Faltan parámetros para Cita. Se requieren 7: IdCita, FechaCita, HoraInicio, HoraFin, Motivo, Observacion, CodigoHistorial.");
@@ -313,6 +343,12 @@ public class CitaServices {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() != 1) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para Cita. Se requieren 1.");
                 return;
@@ -351,6 +387,12 @@ public class CitaServices {
     @Transactional
     private void cancel(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() != 1) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para Cita. Se requieren 1 (IdCita).");
                 return;

@@ -73,6 +73,12 @@ public class DoctorService {
     @Transactional
     private void insert(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Direccion[3], Genero[4],
             // Telefono[5], FechaNac[6], Exp[7], Matricula[8], TelfProf[9], CORREO[10],
             // PASS[11],
@@ -164,6 +170,13 @@ public class DoctorService {
     @Transactional
     public void asignarEspecialidad(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
+
             if (params.size() < 2) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros. Se requiere CI doctor e ID especialidad.");
                 return;
@@ -268,6 +281,12 @@ public class DoctorService {
     @Transactional
     private void update(List<String> params, String fromEmail, List<String> imagenesBase64) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
 
             // Parámetros: CI[0], Nombres[1], Apellidos[2], Direccion[3], Genero[4],
             // Telefono[5], FechaNac[6], Exp[7], Matricula[8], TelfProf[9], CORREO[10],
@@ -333,6 +352,12 @@ public class DoctorService {
 
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String ci = params.get(0);
             Doctor d = doctorRepository.findById(ci).orElse(null);
 

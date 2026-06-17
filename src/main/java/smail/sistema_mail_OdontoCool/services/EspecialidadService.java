@@ -9,12 +9,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import smail.sistema_mail_OdontoCool.entities.Especialidad;
 import smail.sistema_mail_OdontoCool.repositories.EspecialidadRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class EspecialidadService {
 
     @Autowired
     private EspecialidadRepository especialidadRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
     private SmtpClientService smtpService;
@@ -35,6 +39,12 @@ public class EspecialidadService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parámetros: Nombre[0], Estado[1]
             if (params.size() < 3) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para Especialidad. Se requieren 3.");
@@ -55,6 +65,12 @@ public class EspecialidadService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
                 sendResponse(fromEmail, "Error",
@@ -88,8 +104,7 @@ public class EspecialidadService {
                     e.getId(),
                     e.getNombre(),
                     e.getDescripcion(),
-                    e.getEstado()
-            ));
+                    e.getEstado()));
         }
 
         return sb;
