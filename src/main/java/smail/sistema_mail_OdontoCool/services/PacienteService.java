@@ -304,7 +304,7 @@ public class PacienteService {
             }
             pacienteRepository.save(pac);
 
-            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+            Usuario u = usuarioRepository.findByPersonaCiAndSuffix(ci, "PAC").orElse(null);
             if (u == null) {
                 sendResponse(fromEmail, "Error", "Usuario no encontrado.");
                 return;
@@ -344,7 +344,7 @@ public class PacienteService {
                 return;
             }
 
-            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+            Usuario u = usuarioRepository.findByPersonaCiAndSuffix(ci, "PAC").orElse(null);
 
             if (u != null) {
                 usuarioRepository.delete(u);

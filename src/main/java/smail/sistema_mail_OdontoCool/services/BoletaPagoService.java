@@ -190,7 +190,7 @@ public class BoletaPagoService {
             boletaPago.setServiciosPrestados(serviciosPrestados);
             boletaPago.setTotal(totalDetalles - descuento);
 
-            Usuario user = usuarioRepository.findByPersona_Ci(paciente.getCi()).orElse(null);
+            Usuario user = usuarioRepository.findByPersonaCiAndSuffix(paciente.getCi(), "PAC").orElse(null);
             if (user == null) {
                 sendResponse(fromEmail, "Error", "El usuario con CI " + paciente.getCi() + " no existe.");
                 return;
@@ -290,7 +290,7 @@ public class BoletaPagoService {
             }
 
             Paciente paciente = boletaPago.getPaciente();
-            Usuario user = usuarioRepository.findByPersona_Ci(paciente.getCi()).orElse(null);
+            Usuario user = usuarioRepository.findByPersonaCiAndSuffix(paciente.getCi(), "PAC").orElse(null);
             if (user == null) {
                 sendResponse(fromEmail, "Error", "El usuario con CI " + paciente.getCi() + " no existe.");
                 return;

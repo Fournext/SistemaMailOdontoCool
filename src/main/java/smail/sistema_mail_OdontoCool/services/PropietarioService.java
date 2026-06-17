@@ -292,7 +292,7 @@ public class PropietarioService {
             }
             propietarioRepository.save(prop);
 
-            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+            Usuario u = usuarioRepository.findByPersonaCiAndSuffix(ci, "PRP").orElse(null);
             if (u == null) {
                 sendResponse(fromEmail, "Error", "Usuario no encontrado.");
                 return;
@@ -332,7 +332,7 @@ public class PropietarioService {
                 return;
             }
 
-            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+            Usuario u = usuarioRepository.findByPersonaCiAndSuffix(ci, "PRP").orElse(null);
 
             if (u != null) {
                 usuarioRepository.delete(u);

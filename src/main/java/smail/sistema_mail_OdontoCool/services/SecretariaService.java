@@ -293,7 +293,7 @@ public class SecretariaService {
             }
             secretariaRepository.save(s);
 
-            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+            Usuario u = usuarioRepository.findByPersonaCiAndSuffix(ci, "SEC").orElse(null);
             if (u == null) {
                 sendResponse(fromEmail, "Error", "Usuario no encontrado.");
                 return;
@@ -332,7 +332,7 @@ public class SecretariaService {
                 return;
             }
 
-            Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
+            Usuario u = usuarioRepository.findByPersonaCiAndSuffix(ci, "SEC").orElse(null);
 
             if (u != null) {
                 usuarioRepository.delete(u);
