@@ -7,7 +7,10 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import smail.sistema_mail_OdontoCool.entities.Cita;
+import smail.sistema_mail_OdontoCool.entities.DetalleDiagnostico;
 import smail.sistema_mail_OdontoCool.entities.Diagnostico;
+import smail.sistema_mail_OdontoCool.entities.Diente;
 import smail.sistema_mail_OdontoCool.entities.HistorialClinico;
 import smail.sistema_mail_OdontoCool.entities.Paciente;
 import smail.sistema_mail_OdontoCool.entities.Tratamiento;
@@ -179,37 +182,37 @@ public class HistorialClinicoService {
 
                 Diagnostico d = t.getDiagnostico();
                 if (d != null) {
-                    sb.append("    * Diagnóstico asociado:\n");
-                    sb.append("      - ID: ").append(d.getId()).append("\n");
-                    sb.append("      - Síntomas: ").append(d.getSintomas() != null ? d.getSintomas() : "N/A")
-                            .append("\n");
-                    sb.append("      - Tipo: ").append(d.getTipoDiagnostico() != null ? d.getTipoDiagnostico() : "N/A")
-                            .append("\n");
-                    sb.append("      - Gravedad: ").append(d.getGravedad() != null ? d.getGravedad() : "N/A")
-                            .append("\n");
-                    sb.append("      - Observaciones: ")
-                            .append(d.getObservaciones() != null ? d.getObservaciones() : "Ninguna").append("\n");
+                    sb.append("    * Diagnóstico asociado (ID): ").append(d.getId()).append("\n");
                 } else {
-                    sb.append("    * Diagnóstico asociado: Ninguno\n");
+                    sb.append("    * Diagnóstico asociado (ID): Ninguno\n");
                 }
                 sb.append("\n");
             }
         }
 
-        List<Diagnostico> diags = new java.util.ArrayList<>();
+        // Obtener todos los diagnósticos de forma única (pueden venir de citas o de
+        // tratamientos)
+        java.util.Map<Long, Diagnostico> uniqueDiags = new java.util.LinkedHashMap<>();
+        if (h.getCitas() != null) {
+            for (Cita c : h.getCitas()) {
+                if (c.getDiagnostico() != null) {
+                    uniqueDiags.put(c.getDiagnostico().getId(), c.getDiagnostico());
+                }
+            }
+        }
         if (h.getTratamientos() != null) {
             for (Tratamiento t : h.getTratamientos()) {
                 if (t.getDiagnostico() != null) {
-                    diags.add(t.getDiagnostico());
+                    uniqueDiags.put(t.getDiagnostico().getId(), t.getDiagnostico());
                 }
             }
         }
 
-        if (diags.isEmpty()) {
+        if (uniqueDiags.isEmpty()) {
             sb.append("No tiene diagnósticos registrados.\n");
         } else {
             sb.append("Diagnósticos registrados:\n");
-            for (Diagnostico d : diags) {
+            for (Diagnostico d : uniqueDiags.values()) {
                 sb.append("  - Diagnóstico ID: ").append(d.getId()).append("\n");
                 sb.append("    * Síntomas: ").append(d.getSintomas() != null ? d.getSintomas() : "N/A").append("\n");
                 sb.append("    * Tipo: ").append(d.getTipoDiagnostico() != null ? d.getTipoDiagnostico() : "N/A")
@@ -220,6 +223,38 @@ public class HistorialClinicoService {
                 if (d.getCita() != null) {
                     sb.append("    * Cita ID: ").append(d.getCita().getIdCita()).append(" (Fecha: ")
                             .append(d.getCita().getFechaCita()).append(")\n");
+                }
+
+                // Buscar y mostrar el tratamiento asociado si existe (1-to-1)
+                Tratamiento assocTrat = null;
+                if (h.getTratamientos() != null) {
+                    for (Tratamiento t : h.getTratamientos()) {
+                        if (t.getDiagnostico() != null && t.getDiagnostico().getId().equals(d.getId())) {
+                            assocTrat = t;
+                            break;
+                        }
+                    }
+                }
+                if (assocTrat != null) {
+                    sb.append("    * Tratamiento ID: ").append(assocTrat.getId()).append("\n");
+                } else {
+                    sb.append("    * Tratamiento ID: Ninguno\n");
+                }
+
+                // Imprimir detalles de diagnóstico si los tiene
+                if (d.getDetallesDiagnostico() != null && !d.getDetallesDiagnostico().isEmpty()) {
+                    sb.append("    * Detalles:\n");
+                    for (DetalleDiagnostico dd : d.getDetallesDiagnostico()) {
+                        sb.append("      - Diente: ")
+                                .append(dd.getDiente() != null
+                                        ? dd.getDiente().getNumero() + " (" + dd.getDiente().getNombre() + ")"
+                                        : "N/A")
+                                .append("\n");
+                        sb.append("        Zona Bucal: ").append(dd.getZonaBucal() != null ? dd.getZonaBucal() : "N/A")
+                                .append("\n");
+                        sb.append("        Observación: ")
+                                .append(dd.getObservacion() != null ? dd.getObservacion() : "Ninguna").append("\n");
+                    }
                 }
                 sb.append("\n");
             }
