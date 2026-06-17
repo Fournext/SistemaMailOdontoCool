@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Diente;
 import smail.sistema_mail_OdontoCool.repositories.DienteRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class DienteService {
@@ -17,6 +18,8 @@ public class DienteService {
     private SmtpClientService smtpService;
     @Autowired
     private DienteRepository dienteRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -40,6 +43,12 @@ public class DienteService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 5) {
                 sendResponse(fromEmail, "Error", "Parámetros insuficientes para insertar un Diente.");
                 return;
@@ -78,6 +87,12 @@ public class DienteService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
                 sendResponse(fromEmail, "Error",
@@ -102,6 +117,12 @@ public class DienteService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parámetros: id[0], nombre[1], numero[2], tipo[3], ubicacion[4], estado[5]
 
             if (params.size() < 6) {
@@ -172,6 +193,12 @@ public class DienteService {
     }
 
     private void delete(List<String> params, String fromEmail) {
+        // Verificar si es Doctor
+        boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+        if (!exists) {
+            sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+            return;
+        }
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

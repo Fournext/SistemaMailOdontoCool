@@ -15,6 +15,7 @@ import smail.sistema_mail_OdontoCool.entities.Servicio;
 import smail.sistema_mail_OdontoCool.repositories.AsignacionPrecioRepository;
 import smail.sistema_mail_OdontoCool.repositories.PrecioRepository;
 import smail.sistema_mail_OdontoCool.repositories.ServicioRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.ServicioVal;
 
 @Service
@@ -34,6 +35,9 @@ public class ServicioService {
 
     @Autowired
     private ServicioVal servicioVal;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -63,6 +67,12 @@ public class ServicioService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametros: nombre[0], descripcion[1], estado[2]
             if (params.size() < 3) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para registrar un servicio.");
@@ -140,6 +150,12 @@ public class ServicioService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = servicioVal.updateValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -185,6 +201,12 @@ public class ServicioService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params == null || params.size() != 1 || params.get(0).trim().isEmpty()) {
                 sendResponse(fromEmail, "Error", "Debe enviar el ID del servicio a eliminar.");
                 return;
@@ -244,6 +266,12 @@ public class ServicioService {
     @Transactional
     private void asignarPrecioAServicio(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = servicioVal.asignarPrecioValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);

@@ -25,6 +25,7 @@ import smail.sistema_mail_OdontoCool.repositories.ServicioPrestadoRepository;
 import smail.sistema_mail_OdontoCool.repositories.SolicitudAnalisisRepository;
 import smail.sistema_mail_OdontoCool.repositories.TratamientoDienteRepository;
 import smail.sistema_mail_OdontoCool.repositories.TratamientoRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.TratamientoVal;
 
 @Service
@@ -60,6 +61,9 @@ public class TratamientoService {
     @Autowired
     private TratamientoVal tratamientoVal;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
             case "INS":
@@ -85,6 +89,12 @@ public class TratamientoService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = tratamientoVal.insertValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -131,8 +141,21 @@ public class TratamientoService {
             StringBuilder sb;
 
             if ("*".equals(parametro)) {
+                // Verificar si es Doctor
+                boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+                if (!exists) {
+                    sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                    return;
+                }
                 sb = listAll();
             } else {
+                // Verificar si es Doctor o paciente
+                boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR")
+                        || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+                if (!exists) {
+                    sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                    return;
+                }
                 String historialId = parametro.substring("Historial:".length()).trim();
                 sb = findByHistorialClinico(historialId);
             }
@@ -147,6 +170,12 @@ public class TratamientoService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = tratamientoVal.updateValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -169,7 +198,8 @@ public class TratamientoService {
 
             if (!codigoDiagnostico.isEmpty()) {
                 Diagnostico diagnostico = diagnosticoRepository.findById(Long.parseLong(codigoDiagnostico))
-                        .orElseThrow(() -> new RuntimeException("Diagnóstico no encontrado con ID: " + codigoDiagnostico));
+                        .orElseThrow(
+                                () -> new RuntimeException("Diagnóstico no encontrado con ID: " + codigoDiagnostico));
                 tratamiento.setDiagnostico(diagnostico);
             }
             if (!codigoHistorial.isEmpty()) {
@@ -215,6 +245,12 @@ public class TratamientoService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = tratamientoVal.deleteValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -254,8 +290,7 @@ public class TratamientoService {
     }
 
     private StringBuilder findByHistorialClinico(String historialId) {
-        List<Tratamiento> tratamientos
-                = tratamientoRepository.findByHistorialClinicoCodigoHistorial(historialId);
+        List<Tratamiento> tratamientos = tratamientoRepository.findByHistorialClinicoCodigoHistorial(historialId);
 
         StringBuilder sb = new StringBuilder();
         sb.append("Tratamientos para Historial Clínico ID: ")
@@ -276,6 +311,13 @@ public class TratamientoService {
 
     private void buscar(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor o Paciente
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR")
+                    || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = tratamientoVal.buscarValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -287,19 +329,17 @@ public class TratamientoService {
             Tratamiento tratamiento = tratamientoRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Tratamiento con ID: " + id + " no encontrado."));
 
-            List<ServicioPrestado> serviciosPrestados
-                    = servicioPrestadoRepository.findByTratamientoId(id);
+            List<ServicioPrestado> serviciosPrestados = servicioPrestadoRepository.findByTratamientoId(id);
 
-            List<TratamientoDiente> tratamientosDientes
-                    = tratamientoDienteRepository.findByTratamientoId(id);
+            List<TratamientoDiente> tratamientosDientes = tratamientoDienteRepository.findByTratamientoId(id);
 
-            List<SolicitudAnalisis> solicitudesAnalisis
-                    = solicitudAnalisisRepository.findByTratamientoIdConResultado(id);
+            List<SolicitudAnalisis> solicitudesAnalisis = solicitudAnalisisRepository
+                    .findByTratamientoIdConResultado(id);
 
-            List<RecetaRecomendacion> recetas
-                    = recetaRecomendacionRepository.findByTratamientoId(id);
+            List<RecetaRecomendacion> recetas = recetaRecomendacionRepository.findByTratamientoId(id);
             Diagnostico diagnostico = tratamiento.getDiagnostico();
-            List<DetalleDiagnostico> detalleDiagnostico = detalleDiagnosticoRepository.findByDiagnosticoId(diagnostico.getId());
+            List<DetalleDiagnostico> detalleDiagnostico = detalleDiagnosticoRepository
+                    .findByDiagnosticoId(diagnostico.getId());
 
             StringBuilder sb = new StringBuilder();
 
@@ -310,8 +350,7 @@ public class TratamientoService {
                     solicitudesAnalisis,
                     recetas,
                     diagnostico,
-                    detalleDiagnostico
-            ));
+                    detalleDiagnostico));
 
             sendResponse(fromEmail, "Detalle del Tratamiento", sb.toString());
 
@@ -329,8 +368,7 @@ public class TratamientoService {
                 tratamiento.getEstado(),
                 tratamiento.getFechaInicio(),
                 tratamiento.getFechaFin(),
-                tratamiento.getFechaFinReal()
-        );
+                tratamiento.getFechaFinReal());
     }
 
     private String formatearDetalleTratamiento(
@@ -340,8 +378,7 @@ public class TratamientoService {
             List<SolicitudAnalisis> solicitudesAnalisis,
             List<RecetaRecomendacion> recetas,
             Diagnostico diagnostico,
-            List<DetalleDiagnostico> detalleDiagnostico
-    ) {
+            List<DetalleDiagnostico> detalleDiagnostico) {
         StringBuilder sb = new StringBuilder();
 
         sb.append(String.format(
@@ -352,8 +389,7 @@ public class TratamientoService {
                 tratamiento.getEstado(),
                 tratamiento.getFechaInicio(),
                 tratamiento.getFechaFin(),
-                tratamiento.getFechaFinReal()
-        ));
+                tratamiento.getFechaFinReal()));
 
         sb.append("Servicios Prestados:\n");
         if (serviciosPrestados.isEmpty()) {
@@ -367,8 +403,7 @@ public class TratamientoService {
                         sp.getCantidad(),
                         sp.getPrecio(),
                         sp.getSubtotal(),
-                        sp.getEstado()
-                ));
+                        sp.getEstado()));
             }
         }
 
@@ -383,8 +418,7 @@ public class TratamientoService {
                         td.getDiente() != null ? td.getDiente().getNumero() : "N/A",
                         td.getCaraDental(),
                         td.getTratamientoPlanificado(),
-                        td.getEstado()
-                ));
+                        td.getEstado()));
             }
         }
 
@@ -398,8 +432,7 @@ public class TratamientoService {
                         sa.getId(),
                         sa.getAnalisis() != null ? sa.getAnalisis().getNombre() : "N/A",
                         sa.getMotivo(),
-                        sa.getEstado()
-                ));
+                        sa.getEstado()));
 
                 ResultadoAnalisis r = sa.getResultadoAnalisis();
 
@@ -410,14 +443,13 @@ public class TratamientoService {
                             r.getResultado(),
                             r.getObservaciones(),
                             r.getInterpretacion(),
-                            r.getArchivoAdjunto()
-                    ));
+                            r.getArchivoAdjunto()));
                 } else {
                     sb.append("  Resultado: Pendiente\n");
                 }
             }
         }
-        //vamos a agregar los detalles al diagnostico
+        // vamos a agregar los detalles al diagnostico
         if (diagnostico != null) {
             sb.append("\nDiagnóstico:\n");
             sb.append(String.format(
@@ -426,16 +458,14 @@ public class TratamientoService {
                     diagnostico.getSintomas(),
                     diagnostico.getTipoDiagnostico(),
                     diagnostico.getGravedad(),
-                    diagnostico.getObservaciones()
-            ));
+                    diagnostico.getObservaciones()));
             for (DetalleDiagnostico detalle : detalleDiagnostico) {
                 sb.append(String.format(
                         "  Detalle [%s] Observación: %s | Zona Bucal: %s | Diente: %s\n",
                         detalle.getId(),
                         detalle.getObservacion(),
                         detalle.getZonaBucal(),
-                        detalle.getDiente() != null ? detalle.getDiente().getNumero() : "N/A"
-                ));
+                        detalle.getDiente() != null ? detalle.getDiente().getNumero() : "N/A"));
             }
         } else {
             sb.append("\nDiagnóstico: No registrado\n");
@@ -450,8 +480,7 @@ public class TratamientoService {
                         "- [%s] Fecha: %s | Observaciones: %s\n",
                         receta.getId(),
                         receta.getFechaEmision(),
-                        receta.getObservaciones()
-                ));
+                        receta.getObservaciones()));
             }
         }
 

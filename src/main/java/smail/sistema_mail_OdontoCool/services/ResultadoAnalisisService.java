@@ -12,6 +12,7 @@ import smail.sistema_mail_OdontoCool.entities.ResultadoAnalisis;
 import smail.sistema_mail_OdontoCool.entities.SolicitudAnalisis;
 import smail.sistema_mail_OdontoCool.repositories.ResultadoAnalisisRepository;
 import smail.sistema_mail_OdontoCool.repositories.SolicitudAnalisisRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class ResultadoAnalisisService {
@@ -22,6 +23,8 @@ public class ResultadoAnalisisService {
     private SolicitudAnalisisRepository solicitudAnalisisRepository;
     @Autowired
     private SmtpClientService smtpService;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -45,6 +48,12 @@ public class ResultadoAnalisisService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // fechaResultado[0], resultado[1], observaciones[2], interpretacion[3],
             // archivoAdjunto[4], estado[5], solicitudAnalisisId[6]
 
@@ -114,6 +123,12 @@ public class ResultadoAnalisisService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
                 sendResponse(fromEmail, "Error",
@@ -138,6 +153,12 @@ public class ResultadoAnalisisService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // id[0], fechaResultado[1], resultado[2], observaciones[3], interpretacion[4],
             // archivoAdjunto[5], estado[6], solicitudAnalisisId[7]
 
@@ -216,6 +237,12 @@ public class ResultadoAnalisisService {
     }
 
     private void delete(List<String> params, String fromEmail) {
+        // Verificar si es Doctor
+        boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+        if (!exists) {
+            sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+            return;
+        }
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

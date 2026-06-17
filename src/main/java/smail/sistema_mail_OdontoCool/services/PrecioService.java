@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Precio;
 import smail.sistema_mail_OdontoCool.repositories.PrecioRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class PrecioService {
@@ -19,6 +20,9 @@ public class PrecioService {
 
     @Autowired
     private PrecioRepository precioRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -42,6 +46,12 @@ public class PrecioService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 3) {
                 sendResponse(fromEmail, "Error", "Parámetros insuficientes para insertar un precio.");
                 return;
@@ -60,9 +70,16 @@ public class PrecioService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
             if (params.size() == 1) {
@@ -83,10 +100,17 @@ public class PrecioService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
-            //Parametros: id[0], monto[1], moneda[2], estado[3]
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
+            // Parametros: id[0], monto[1], moneda[2], estado[3]
             // if (params.size() < 4) {
-            //     sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar un precio.");
-            //     return;
+            // sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar un
+            // precio.");
+            // return;
             // }
             Long id = Long.parseLong(params.get(0));
             String moneda = params.get(1);
@@ -116,8 +140,15 @@ public class PrecioService {
         }
     }
 
-    // TODO: Implementar eliminación lógica (cambiar estado a INACTIVO) en lugar de eliminación física
+    // TODO: Implementar eliminación lógica (cambiar estado a INACTIVO) en lugar de
+    // eliminación física
     private void delete(List<String> params, String fromEmail) {
+        // Verificar si es Propietario
+        boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+        if (!exists) {
+            sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+            return;
+        }
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

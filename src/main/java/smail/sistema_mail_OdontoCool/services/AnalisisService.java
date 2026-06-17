@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Analisis;
 import smail.sistema_mail_OdontoCool.repositories.AnalisisRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class AnalisisService {
@@ -17,6 +18,8 @@ public class AnalisisService {
     private SmtpClientService smtpService;
     @Autowired
     private AnalisisRepository analisisRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -40,6 +43,12 @@ public class AnalisisService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // nombre[0], descripcion[1], estado[2]
 
             if (params.size() < 3) {
@@ -86,9 +95,16 @@ public class AnalisisService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+                sendResponse(fromEmail, "Error",
+                        "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
                 return;
             }
             if (params.size() == 1) {
@@ -109,6 +125,12 @@ public class AnalisisService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parámetros: id[0], nombre[1], descripcion[2], estado[3]
 
             if (params.size() < 4) {
@@ -169,6 +191,12 @@ public class AnalisisService {
     }
 
     private void delete(List<String> params, String fromEmail) {
+        // Verificar si es Doctor
+        boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+        if (!exists) {
+            sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+            return;
+        }
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

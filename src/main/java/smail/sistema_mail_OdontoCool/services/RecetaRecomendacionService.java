@@ -13,6 +13,7 @@ import smail.sistema_mail_OdontoCool.entities.RecetaRecomendacion;
 import smail.sistema_mail_OdontoCool.entities.Tratamiento;
 import smail.sistema_mail_OdontoCool.repositories.RecetaRecomendacionRepository;
 import smail.sistema_mail_OdontoCool.repositories.TratamientoRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class RecetaRecomendacionService {
@@ -25,6 +26,9 @@ public class RecetaRecomendacionService {
 
     @Autowired
     private TratamientoRepository tratamientoRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -47,16 +51,24 @@ public class RecetaRecomendacionService {
 
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             /*
              * Formato:
-             * INSREC["FechaEmision", "Observaciones", "ID Tratamiento", "Descripcion;Dosis;Duracion;Frecuencia | Descripcion;Dosis;Duracion;Frecuencia"]
+             * INSREC["FechaEmision", "Observaciones", "ID Tratamiento",
+             * "Descripcion;Dosis;Duracion;Frecuencia | Descripcion;Dosis;Duracion;Frecuencia"
+             * ]
              */
 
             if (params.size() < 4) {
                 sendResponse(fromEmail, "Error",
                         "Parámetros insuficientes.\n"
-                        + "Formato correcto:\n"
-                        + "INSREC[\"FechaEmision\", \"Observaciones\", \"ID Tratamiento\", \"Descripcion;Dosis;Duracion;Frecuencia | Descripcion;Dosis;Duracion;Frecuencia\"]");
+                                + "Formato correcto:\n"
+                                + "INSREC[\"FechaEmision\", \"Observaciones\", \"ID Tratamiento\", \"Descripcion;Dosis;Duracion;Frecuencia | Descripcion;Dosis;Duracion;Frecuencia\"]");
                 return;
             }
 
@@ -101,8 +113,8 @@ public class RecetaRecomendacionService {
 
             sendResponse(fromEmail, "Éxito",
                     "Receta/Recomendación registrada correctamente.\n"
-                    + "ID Receta/Recomendación: " + receta.getId() + "\n"
-                    + "Detalles registrados: " + receta.getDetallesRecomendacion().size());
+                            + "ID Receta/Recomendación: " + receta.getId() + "\n"
+                            + "Detalles registrados: " + receta.getDetallesRecomendacion().size());
 
         } catch (NumberFormatException e) {
             sendResponse(fromEmail, "Error", "El ID del tratamiento debe ser numérico.");
@@ -130,8 +142,8 @@ public class RecetaRecomendacionService {
             if (partes.length < 4) {
                 throw new IllegalArgumentException(
                         "El detalle N° " + (i + 1) + " está incompleto.\n"
-                        + "Formato correcto del detalle:\n"
-                        + "Descripcion;Dosis;Duracion;Frecuencia");
+                                + "Formato correcto del detalle:\n"
+                                + "Descripcion;Dosis;Duracion;Frecuencia");
             }
 
             String descripcion = partes[0].trim();
@@ -155,6 +167,12 @@ public class RecetaRecomendacionService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params == null || params.isEmpty()) {
                 sendResponse(fromEmail, "Error", "Use LISREC[*] o LISREC[\"Tratamiento:ID\"]");
                 return;
@@ -190,13 +208,12 @@ public class RecetaRecomendacionService {
         try {
             Long tratamientoId = Long.parseLong(tratamientoIdTexto);
 
-            List<RecetaRecomendacion> recetas
-                    = recetaRecomendacionRepository.listarPorTratamientoConDetalles(tratamientoId);
+            List<RecetaRecomendacion> recetas = recetaRecomendacionRepository
+                    .listarPorTratamientoConDetalles(tratamientoId);
 
             return construirListado(
                     recetas,
-                    "Listado de Recetas/Recomendaciones del Tratamiento ID: " + tratamientoId
-            );
+                    "Listado de Recetas/Recomendaciones del Tratamiento ID: " + tratamientoId);
 
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("El ID del tratamiento debe ser numérico.");
@@ -205,6 +222,12 @@ public class RecetaRecomendacionService {
 
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // id[0], fechaEmision[1], observaciones[2], tratamientoId[3]
 
             if (params.size() < 4) {
@@ -256,6 +279,12 @@ public class RecetaRecomendacionService {
     }
 
     private void delete(List<String> params, String fromEmail) {
+        // Verificar si es Doctor
+        boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+        if (!exists) {
+            sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+            return;
+        }
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

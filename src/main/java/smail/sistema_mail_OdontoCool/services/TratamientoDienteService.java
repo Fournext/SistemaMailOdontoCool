@@ -14,6 +14,7 @@ import smail.sistema_mail_OdontoCool.entities.TratamientoDiente;
 import smail.sistema_mail_OdontoCool.repositories.DienteRepository;
 import smail.sistema_mail_OdontoCool.repositories.TratamientoDienteRepository;
 import smail.sistema_mail_OdontoCool.repositories.TratamientoRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.TratamientoDienteVal;
 
 @Service
@@ -33,6 +34,9 @@ public class TratamientoDienteService {
 
     @Autowired
     private TratamientoDienteVal tratamientoDienteVal;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -56,6 +60,12 @@ public class TratamientoDienteService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = tratamientoDienteVal.insertValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -118,8 +128,21 @@ public class TratamientoDienteService {
             String parametro = params.get(0).trim();
 
             if ("*".equals(parametro)) {
+                // Verificar si es Doctor
+                boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+                if (!exists) {
+                    sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                    return;
+                }
                 sb = listAll();
             } else {
+                // Verificar si es Doctor o paciente
+                boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR")
+                        || usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PACIENTE");
+                if (!exists) {
+                    sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                    return;
+                }
                 String tratamientoIdTexto = parametro.substring("Tratamiento:".length()).trim();
                 Long tratamientoId = Long.parseLong(tratamientoIdTexto);
                 sb = findByTratamiento(tratamientoId);
@@ -135,6 +158,12 @@ public class TratamientoDienteService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = tratamientoDienteVal.updateValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -202,6 +231,12 @@ public class TratamientoDienteService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params == null || params.size() != 1 || params.get(0).trim().isEmpty()) {
                 sendResponse(fromEmail, "Error", "Debe enviar el ID del tratamiento de diente.");
                 return;
@@ -265,8 +300,7 @@ public class TratamientoDienteService {
                 tratamientoDiente.getEstado(),
                 tratamientoDiente.getTratamientoPlanificado(),
                 tratamientoDiente.getTratamiento() != null ? tratamientoDiente.getTratamiento().getId() : "N/A",
-                tratamientoDiente.getDiente() != null ? tratamientoDiente.getDiente().getId() : "N/A"
-        );
+                tratamientoDiente.getDiente() != null ? tratamientoDiente.getDiente().getId() : "N/A");
     }
 
     private void sendResponse(String to, String subject, String body) {

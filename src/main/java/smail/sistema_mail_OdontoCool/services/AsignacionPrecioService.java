@@ -14,6 +14,7 @@ import smail.sistema_mail_OdontoCool.entities.Servicio;
 import smail.sistema_mail_OdontoCool.repositories.AsignacionPrecioRepository;
 import smail.sistema_mail_OdontoCool.repositories.PrecioRepository;
 import smail.sistema_mail_OdontoCool.repositories.ServicioRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 
 @Service
 public class AsignacionPrecioService {
@@ -27,6 +28,8 @@ public class AsignacionPrecioService {
     private PrecioRepository precioRepository;
     @Autowired
     private ServicioRepository servicioRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -58,7 +61,14 @@ public class AsignacionPrecioService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
-            //Parametros: fecha_inicio[0], fecha_fin[1], servicio_id[2], precio_id[3], estado[4]
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
+            // Parametros: fecha_inicio[0], fecha_fin[1], servicio_id[2], precio_id[3],
+            // estado[4]
             if (params.size() < 5) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para registrar un turno.");
                 return;
@@ -80,7 +90,8 @@ public class AsignacionPrecioService {
             asignacionPrecio.setPrecio(precio);
             asignacionPrecio.setServicio(servicio);
             asignacionPrecioRepository.save(asignacionPrecio);
-            sendResponse(fromEmail, "Éxito", "Asignación de precio: " + asignacionPrecio.getServicio().getNombre() + " registrada correctamente.");
+            sendResponse(fromEmail, "Éxito", "Asignación de precio: " + asignacionPrecio.getServicio().getNombre()
+                    + " registrada correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo registrar una asignación de precio: " + e.getMessage());
         }
@@ -88,6 +99,12 @@ public class AsignacionPrecioService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
                 sendResponse(fromEmail, "Error",
@@ -115,6 +132,12 @@ public class AsignacionPrecioService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Propietario
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 6) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar una asignación de precio.");
                 return;
@@ -139,14 +162,17 @@ public class AsignacionPrecioService {
                 precioId = Long.parseLong(params.get(5));
             }
 
-            AsignacionPrecio asignacionPrecio = asignacionPrecioRepository.findById(id).orElseThrow(() -> new RuntimeException("Asignación de precio con ID: " + id + " no encontrada."));
+            AsignacionPrecio asignacionPrecio = asignacionPrecioRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Asignación de precio con ID: " + id + " no encontrada."));
 
             if (servicioId != null) {
-                Servicio servicio = servicioRepository.findById(servicioId).orElseThrow(() -> new RuntimeException("Servicio  no encontrado."));
+                Servicio servicio = servicioRepository.findById(servicioId)
+                        .orElseThrow(() -> new RuntimeException("Servicio  no encontrado."));
                 asignacionPrecio.setServicio(servicio);
             }
             if (precioId != null) {
-                Precio precio = precioRepository.findById(precioId).orElseThrow(() -> new RuntimeException("Precio no encontrado."));
+                Precio precio = precioRepository.findById(precioId)
+                        .orElseThrow(() -> new RuntimeException("Precio no encontrado."));
                 asignacionPrecio.setPrecio(precio);
             }
 
@@ -160,7 +186,8 @@ public class AsignacionPrecioService {
                 asignacionPrecio.setEstado(estado);
             }
             asignacionPrecioRepository.save(asignacionPrecio);
-            sendResponse(fromEmail, "Éxito", "Asignación de precio: " + asignacionPrecio.getServicio().getNombre() + " actualizada correctamente.");
+            sendResponse(fromEmail, "Éxito", "Asignación de precio: " + asignacionPrecio.getServicio().getNombre()
+                    + " actualizada correctamente.");
 
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo actualizar la asignación de precio: " + e.getMessage());
@@ -170,6 +197,12 @@ public class AsignacionPrecioService {
 
     // TODO: Implementar método delete para Asignación de precio a servicios
     private void delete(List<String> params, String fromEmail) {
+        // Verificar si es Propietario
+        boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "PROPIETARIO");
+        if (!exists) {
+            sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+            return;
+        }
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

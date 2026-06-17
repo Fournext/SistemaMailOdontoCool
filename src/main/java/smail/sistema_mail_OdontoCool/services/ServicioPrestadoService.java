@@ -17,6 +17,7 @@ import smail.sistema_mail_OdontoCool.repositories.AsignacionPrecioRepository;
 import smail.sistema_mail_OdontoCool.repositories.ServicioPrestadoRepository;
 import smail.sistema_mail_OdontoCool.repositories.ServicioRepository;
 import smail.sistema_mail_OdontoCool.repositories.TratamientoRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.ServicioPrestadoVal;
 
 @Service
@@ -40,6 +41,9 @@ public class ServicioPrestadoService {
     @Autowired
     private ServicioPrestadoVal servicioPrestadoVal;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
             case "INS":
@@ -62,6 +66,12 @@ public class ServicioPrestadoService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = servicioPrestadoVal.insertValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -88,11 +98,13 @@ public class ServicioPrestadoService {
                         .orElseThrow(() -> new RuntimeException("Servicio con ID: " + servicioId + " no encontrado."));
 
                 Tratamiento tratamiento = tratamientoRepository.findById(tratamientoId)
-                        .orElseThrow(() -> new RuntimeException("Tratamiento con ID: " + tratamientoId + " no encontrado."));
+                        .orElseThrow(
+                                () -> new RuntimeException("Tratamiento con ID: " + tratamientoId + " no encontrado."));
 
                 AsignacionPrecio asignacion = asignacionPrecioRepository
                         .findTopByServicioIdAndEstadoOrderByFechaInicioDesc(servicioId, "ACTIVO")
-                        .orElseThrow(() -> new RuntimeException("No hay precio activo para el servicio ID: " + servicioId));
+                        .orElseThrow(
+                                () -> new RuntimeException("No hay precio activo para el servicio ID: " + servicioId));
 
                 BigDecimal precioSistema = asignacion.getPrecio().getMonto();
 
@@ -130,6 +142,12 @@ public class ServicioPrestadoService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = servicioPrestadoVal.listValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -143,8 +161,7 @@ public class ServicioPrestadoService {
                 sb = listAll();
             } else {
                 Long tratamientoId = Long.parseLong(
-                        parametro.substring("Tratamiento:".length()).trim()
-                );
+                        parametro.substring("Tratamiento:".length()).trim());
                 sb = findByTratamiento(tratamientoId);
             }
 
@@ -158,6 +175,12 @@ public class ServicioPrestadoService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = servicioPrestadoVal.updateValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -188,7 +211,8 @@ public class ServicioPrestadoService {
             if (!params.get(5).trim().isEmpty()) {
                 Long tratamientoId = Long.parseLong(params.get(5).trim());
                 Tratamiento tratamiento = tratamientoRepository.findById(tratamientoId)
-                        .orElseThrow(() -> new RuntimeException("Tratamiento con ID: " + tratamientoId + " no encontrado."));
+                        .orElseThrow(
+                                () -> new RuntimeException("Tratamiento con ID: " + tratamientoId + " no encontrado."));
                 servicioPrestado.setTratamiento(tratamiento);
             }
 
@@ -216,6 +240,12 @@ public class ServicioPrestadoService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = servicioPrestadoVal.deleteValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -251,8 +281,7 @@ public class ServicioPrestadoService {
     }
 
     private StringBuilder findByTratamiento(Long tratamientoId) {
-        List<ServicioPrestado> serviciosPrestados =
-                servicioPrestadoRepository.findByTratamientoId(tratamientoId);
+        List<ServicioPrestado> serviciosPrestados = servicioPrestadoRepository.findByTratamientoId(tratamientoId);
 
         StringBuilder sb = new StringBuilder();
         sb.append("Listado de Servicios Prestados para Tratamiento ID: ")
@@ -304,8 +333,7 @@ public class ServicioPrestadoService {
                 servicio.getFechaServicio(),
                 servicio.getEstado(),
                 servicio.getServicio() != null ? servicio.getServicio().getNombre() : "N/A",
-                servicio.getTratamiento() != null ? servicio.getTratamiento().getId() : "N/A"
-        );
+                servicio.getTratamiento() != null ? servicio.getTratamiento().getId() : "N/A");
     }
 
     private void sendResponse(String to, String subject, String body) {

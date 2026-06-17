@@ -16,6 +16,7 @@ import smail.sistema_mail_OdontoCool.repositories.AnalisisRepository;
 import smail.sistema_mail_OdontoCool.repositories.ResultadoAnalisisRepository;
 import smail.sistema_mail_OdontoCool.repositories.SolicitudAnalisisRepository;
 import smail.sistema_mail_OdontoCool.repositories.TratamientoRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.SolicitudAnalisisVal;
 
 @Service
@@ -38,6 +39,9 @@ public class SolicitudAnalisisService {
 
     @Autowired
     private SolicitudAnalisisVal solicitudAnalisisVal;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -64,6 +68,12 @@ public class SolicitudAnalisisService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = solicitudAnalisisVal.insertValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -113,6 +123,12 @@ public class SolicitudAnalisisService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = solicitudAnalisisVal.listValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -126,8 +142,7 @@ public class SolicitudAnalisisService {
                 sb = listAll();
             } else {
                 Long tratamientoId = Long.parseLong(
-                        parametro.substring("Tratamiento:".length()).trim()
-                );
+                        parametro.substring("Tratamiento:".length()).trim());
                 sb = findByTratamientoId(tratamientoId);
             }
 
@@ -141,6 +156,12 @@ public class SolicitudAnalisisService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = solicitudAnalisisVal.updateValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -198,6 +219,12 @@ public class SolicitudAnalisisService {
     @Transactional
     private void agregarResultado(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = solicitudAnalisisVal.agregarResultadoValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -213,7 +240,8 @@ public class SolicitudAnalisisService {
             String archivoAdjunto = params.get(6).trim();
 
             SolicitudAnalisis solicitud = solicitudAnalisisRepository.findById(solicitudId)
-                    .orElseThrow(() -> new RuntimeException("Solicitud de análisis con ID: " + solicitudId + " no encontrada."));
+                    .orElseThrow(() -> new RuntimeException(
+                            "Solicitud de análisis con ID: " + solicitudId + " no encontrada."));
 
             ResultadoAnalisis resultadoAnalisis = new ResultadoAnalisis();
             resultadoAnalisis.setFechaResultado(fechaResultado);
@@ -242,6 +270,12 @@ public class SolicitudAnalisisService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             String validationMsg = solicitudAnalisisVal.deleteValid(params);
             if (!validationMsg.isEmpty()) {
                 sendResponse(fromEmail, "Error en la Validación", validationMsg);
@@ -313,8 +347,7 @@ public class SolicitudAnalisisService {
                 s.getMotivo(),
                 s.getEstado(),
                 s.getAnalisis() != null ? s.getAnalisis().getNombre() : "N/A",
-                s.getTratamiento() != null ? s.getTratamiento().getId() : "N/A"
-        ));
+                s.getTratamiento() != null ? s.getTratamiento().getId() : "N/A"));
 
         if (s.getResultadoAnalisis() != null) {
             ResultadoAnalisis r = s.getResultadoAnalisis();
@@ -327,8 +360,7 @@ public class SolicitudAnalisisService {
                     r.getObservaciones(),
                     r.getInterpretacion(),
                     r.getEstado(),
-                    r.getArchivoAdjunto()
-            ));
+                    r.getArchivoAdjunto()));
         }
 
         return sb.toString();

@@ -14,6 +14,7 @@ import smail.sistema_mail_OdontoCool.entities.Diente;
 import smail.sistema_mail_OdontoCool.repositories.CitaRepository;
 import smail.sistema_mail_OdontoCool.repositories.DiagnosticoRepository;
 import smail.sistema_mail_OdontoCool.repositories.DienteRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.DiagnosticoVal;
 
 @Service
@@ -30,6 +31,8 @@ public class DiagnosticoService {
     private DienteRepository dienteRepository;
     @Autowired
     private DiagnosticoVal diagnosticoVal;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -58,16 +61,24 @@ public class DiagnosticoService {
             return;
         }
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             /*
-         * Formato:
-         * INSDIA["Sintomas", "TipoDiagnostico", "Gravedad", "Observaciones", "ID Cita", "ObservacionDetalle;ZonaBucal;ID Diente | ObservacionDetalle;ZonaBucal;ID Diente"]
+             * Formato:
+             * INSDIA["Sintomas", "TipoDiagnostico", "Gravedad", "Observaciones", "ID Cita",
+             * "ObservacionDetalle;ZonaBucal;ID Diente | ObservacionDetalle;ZonaBucal;ID Diente"
+             * ]
              */
 
             if (params.size() < 6) {
                 sendResponse(fromEmail, "Error",
                         "Parámetros insuficientes.\n"
-                        + "Formato correcto:\n"
-                        + "INSDIA[\"Sintomas\", \"TipoDiagnostico\", \"Gravedad\", \"Observaciones\", \"ID Cita\", \"ObservacionDetalle;ZonaBucal;ID Diente | ObservacionDetalle;ZonaBucal;ID Diente\"]");
+                                + "Formato correcto:\n"
+                                + "INSDIA[\"Sintomas\", \"TipoDiagnostico\", \"Gravedad\", \"Observaciones\", \"ID Cita\", \"ObservacionDetalle;ZonaBucal;ID Diente | ObservacionDetalle;ZonaBucal;ID Diente\"]");
                 return;
             }
 
@@ -131,8 +142,8 @@ public class DiagnosticoService {
 
             sendResponse(fromEmail, "Éxito",
                     "Diagnóstico registrado correctamente.\n"
-                    + "ID Diagnóstico: " + diagnostico.getId() + "\n"
-                    + "Detalles registrados: " + diagnostico.getDetallesDiagnostico().size());
+                            + "ID Diagnóstico: " + diagnostico.getId() + "\n"
+                            + "Detalles registrados: " + diagnostico.getDetallesDiagnostico().size());
 
         } catch (NumberFormatException e) {
             sendResponse(fromEmail, "Error", "El ID de la cita y el ID del diente deben ser numéricos.");
@@ -142,7 +153,13 @@ public class DiagnosticoService {
     }
 
     private void list(List<String> params, String fromEmail) {
-         String errores = diagnosticoVal.listValid(params);
+        // Verificar si es Doctor
+        boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+        if (!exists) {
+            sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+            return;
+        }
+        String errores = diagnosticoVal.listValid(params);
         if (!errores.isEmpty()) {
             sendResponse(fromEmail, "Error", errores);
             return;
@@ -169,13 +186,20 @@ public class DiagnosticoService {
 
     @Transactional
     private void update(List<String> params, String fromEmail) {
-         String errores = diagnosticoVal.updateValid(params);
+        // Verificar si es Doctor
+        boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+        if (!exists) {
+            sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+            return;
+        }
+        String errores = diagnosticoVal.updateValid(params);
         if (!errores.isEmpty()) {
             sendResponse(fromEmail, "Error", errores);
             return;
         }
         try {
-            // id[0], sintomas[1], tipoDiagnostico[2], gravedad[3], observaciones[4], citaId[5]
+            // id[0], sintomas[1], tipoDiagnostico[2], gravedad[3], observaciones[4],
+            // citaId[5]
 
             if (params.size() < 6) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar un diagnóstico.");
@@ -231,7 +255,8 @@ public class DiagnosticoService {
 
             diagnosticoRepository.save(diagnostico);
 
-            sendResponse(fromEmail, "Éxito", "Diagnóstico con ID: " + diagnostico.getId() + " actualizado correctamente.");
+            sendResponse(fromEmail, "Éxito",
+                    "Diagnóstico con ID: " + diagnostico.getId() + " actualizado correctamente.");
 
         } catch (NumberFormatException e) {
             sendResponse(fromEmail, "Error", "El ID del diagnóstico y el ID de la cita deben ser numéricos.");
@@ -241,6 +266,12 @@ public class DiagnosticoService {
     }
 
     private void delete(List<String> params, String fromEmail) {
+        // Verificar si es Doctor
+        boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+        if (!exists) {
+            sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+            return;
+        }
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
@@ -253,7 +284,7 @@ public class DiagnosticoService {
     }
 
     private StringBuilder listAll() {
-        
+
         List<Diagnostico> diagnosticos = diagnosticoRepository.listarTodoConDetalles();
 
         StringBuilder sb = new StringBuilder();
@@ -320,8 +351,8 @@ public class DiagnosticoService {
             if (partes.length < 3) {
                 throw new IllegalArgumentException(
                         "El detalle N° " + (i + 1) + " está incompleto.\n"
-                        + "Formato correcto del detalle:\n"
-                        + "ObservacionDetalle;ZonaBucal;ID Diente");
+                                + "Formato correcto del detalle:\n"
+                                + "ObservacionDetalle;ZonaBucal;ID Diente");
             }
 
             String observacionDetalle = partes[0].trim();

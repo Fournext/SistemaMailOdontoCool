@@ -10,12 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Cita;
 import smail.sistema_mail_OdontoCool.entities.DetalleDiagnostico;
 import smail.sistema_mail_OdontoCool.entities.Diagnostico;
-import smail.sistema_mail_OdontoCool.entities.Diente;
 import smail.sistema_mail_OdontoCool.entities.HistorialClinico;
 import smail.sistema_mail_OdontoCool.entities.Paciente;
 import smail.sistema_mail_OdontoCool.entities.Tratamiento;
 import smail.sistema_mail_OdontoCool.repositories.HistorialClinicoRepository;
 import smail.sistema_mail_OdontoCool.repositories.PacienteRepository;
+import smail.sistema_mail_OdontoCool.repositories.UsuarioRepository;
 import smail.sistema_mail_OdontoCool.validations.HistorialClinicoVal;
 
 @Service
@@ -32,6 +32,9 @@ public class HistorialClinicoService {
 
     @Autowired
     private HistorialClinicoVal historialClinicoVal;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
@@ -55,6 +58,12 @@ public class HistorialClinicoService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parametros: CI[0], Alergias[1], AntecendentesMedicos[2],
             // EnfermedadesBase[3], motivoApertura[4], ObservacionesGenerales[5],
             if (params.size() < 6) {
@@ -106,6 +115,13 @@ public class HistorialClinicoService {
 
     private void list(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor o Secretaria
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR") ||
+                    usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "SECRETARIA");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             if (params.size() == 0) {
                 sendResponse(fromEmail, "Error",
@@ -320,6 +336,12 @@ public class HistorialClinicoService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             // Parámetros: codigoHistorial[0], Alergias[1], AntecedentesMedicos[2],
             // EnfermedadesBase[3], MotivoApertura[4], ObservacionesGenerales[5]
             if (params.size() < 6) {
@@ -372,6 +394,12 @@ public class HistorialClinicoService {
     @Transactional
     private void delete(List<String> params, String fromEmail) {
         try {
+            // Verificar si es Doctor
+            boolean exists = usuarioRepository.existsByCorreoElectronicoAndRolNombre(fromEmail, "DOCTOR");
+            if (!exists) {
+                sendResponse(fromEmail, "Error", "No tiene permisos para realizar esta operacion");
+                return;
+            }
             if (params.size() < 1) {
                 sendResponse(fromEmail, "Error", "Faltan parámetros para Historial Clínico. Se requiere 1.");
                 return;
