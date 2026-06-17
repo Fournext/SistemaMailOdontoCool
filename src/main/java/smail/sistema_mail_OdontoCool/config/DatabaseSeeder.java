@@ -168,7 +168,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
                         // Crear usuario para el propietario si no existe
                         String codUsuario = "P" + propietarioCi + "PRP";
-                        if (usuarioRepository.findByPersona_Ci(propietarioCi).isEmpty()) {
+                        if (usuarioRepository.findByPersonaCiAndSuffix(propietarioCi, "PRP").isEmpty()) {
                                 Usuario usuario = new Usuario();
                                 usuario.setCodigoUsuario(codUsuario);
                                 usuario.setCorreoElectronico("sebastianzc041107@gmail.com");
@@ -184,7 +184,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 } else {
                         System.out.println("====== SEED: El propietario con CI 9999999 ya existe. Omitiendo... ======");
                         // Si el usuario existe pero no tiene rol, se lo asignamos
-                        usuarioRepository.findByPersona_Ci(propietarioCi).ifPresent(usuario -> {
+                        usuarioRepository.findByPersonaCiAndSuffix(propietarioCi, "PRP").ifPresent(usuario -> {
                                 if (usuario.getRol() == null) {
                                         usuario.setRol(rolPropietario);
                                         usuarioRepository.save(usuario);
