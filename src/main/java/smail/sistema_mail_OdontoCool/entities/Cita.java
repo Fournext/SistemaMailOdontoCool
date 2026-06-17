@@ -70,9 +70,6 @@ public class Cita {
     private HistorialClinico historialClinico;
 
     @OneToOne(mappedBy = "cita")
-    private SesionTratamiento sesionTratamiento;
-
-    @OneToOne(mappedBy = "cita")
     private Diagnostico diagnostico;
 
     public Cita() {
@@ -149,14 +146,6 @@ public class Cita {
 
     public void setHistorialClinico(HistorialClinico historialClinico) {
         this.historialClinico = historialClinico;
-    }
-
-    public SesionTratamiento getSesionTratamiento() {
-        return sesionTratamiento;
-    }
-
-    public void setSesionTratamiento(SesionTratamiento sesionTratamiento) {
-        this.sesionTratamiento = sesionTratamiento;
     }
 
     public List<AsignacionEstadoCita> getAsignacionesEstadoCita() {
