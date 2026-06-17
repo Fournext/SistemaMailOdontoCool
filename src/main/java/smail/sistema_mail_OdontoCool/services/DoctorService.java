@@ -320,15 +320,33 @@ public class DoctorService {
                 sendResponse(fromEmail, "Error", "Doctor no encontrado.");
                 return;
             }
-            d.setNombres(nombres);
-            d.setApellidos(apellidos);
-            d.setDireccion(direccion);
-            d.setGenero(genero);
-            d.setTelefono(telefono);
-            d.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
-            d.setTiempoExperiencia(tiempoExperiencia);
-            d.setMatriculaProfesional(matriculaProfesional);
-            d.setTelefonoProfesional(telefonoProfesional);
+            if (nombres != null && !nombres.trim().isEmpty()) {
+                d.setNombres(nombres);
+            }
+            if (apellidos != null && !apellidos.trim().isEmpty()) {
+                d.setApellidos(apellidos);
+            }
+            if (direccion != null && !direccion.trim().isEmpty()) {
+                d.setDireccion(direccion);
+            }
+            if (genero != null && !genero.trim().isEmpty()) {
+                d.setGenero(genero);
+            }
+            if (telefono != null && !telefono.trim().isEmpty()) {
+                d.setTelefono(telefono);
+            }
+            if (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty()) {
+                d.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
+            }
+            if (tiempoExperiencia != null && !tiempoExperiencia.trim().isEmpty()) {
+                d.setTiempoExperiencia(tiempoExperiencia);
+            }
+            if (matriculaProfesional != null && !matriculaProfesional.trim().isEmpty()) {
+                d.setMatriculaProfesional(matriculaProfesional);
+            }
+            if (telefonoProfesional != null && !telefonoProfesional.trim().isEmpty()) {
+                d.setTelefonoProfesional(telefonoProfesional);
+            }
             doctorRepository.save(d);
 
             Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
@@ -336,15 +354,19 @@ public class DoctorService {
                 sendResponse(fromEmail, "Error", "Usuario no encontrado.");
                 return;
             }
-            u.setCorreoElectronico(correoElectronico);
-            u.setContraseña(passwordService.hashPassword(contraseña));
+            if (correoElectronico != null && !correoElectronico.trim().isEmpty()) {
+                u.setCorreoElectronico(correoElectronico);
+            }
+            if (contraseña != null && !contraseña.trim().isEmpty()) {
+                u.setContraseña(passwordService.hashPassword(contraseña));
+            }
             if (imagenesBase64 != null && !imagenesBase64.isEmpty()) {
                 String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
                 u.setFotoUrl(fotoUrl);
             }
             usuarioRepository.save(u);
 
-            sendResponse(fromEmail, "Éxito", "Doctor(a) " + nombres + " actualizado(a) correctamente.");
+            sendResponse(fromEmail, "Éxito", "Doctor(a) " + d.getNombres() + " actualizado(a) correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo actualizar doctor: " + e.getMessage());
         }

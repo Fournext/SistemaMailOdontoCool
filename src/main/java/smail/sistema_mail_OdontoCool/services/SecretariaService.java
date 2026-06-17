@@ -270,13 +270,27 @@ public class SecretariaService {
                 sendResponse(fromEmail, "Error", "Secretaria no encontrada.");
                 return;
             }
-            s.setNombres(nombres);
-            s.setApellidos(apellidos);
-            s.setDireccion(direccion);
-            s.setGenero(genero);
-            s.setTelefono(telefono);
-            s.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
-            s.setFechaContratacion(LocalDate.parse(fechaContratacion));
+            if (nombres != null && !nombres.trim().isEmpty()) {
+                s.setNombres(nombres);
+            }
+            if (apellidos != null && !apellidos.trim().isEmpty()) {
+                s.setApellidos(apellidos);
+            }
+            if (direccion != null && !direccion.trim().isEmpty()) {
+                s.setDireccion(direccion);
+            }
+            if (genero != null && !genero.trim().isEmpty()) {
+                s.setGenero(genero);
+            }
+            if (telefono != null && !telefono.trim().isEmpty()) {
+                s.setTelefono(telefono);
+            }
+            if (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty()) {
+                s.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
+            }
+            if (fechaContratacion != null && !fechaContratacion.trim().isEmpty()) {
+                s.setFechaContratacion(LocalDate.parse(fechaContratacion));
+            }
             secretariaRepository.save(s);
 
             Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
@@ -284,15 +298,19 @@ public class SecretariaService {
                 sendResponse(fromEmail, "Error", "Usuario no encontrado.");
                 return;
             }
-            u.setCorreoElectronico(correoElectronico);
-            u.setContraseña(passwordService.hashPassword(contraseña));
+            if (correoElectronico != null && !correoElectronico.trim().isEmpty()) {
+                u.setCorreoElectronico(correoElectronico);
+            }
+            if (contraseña != null && !contraseña.trim().isEmpty()) {
+                u.setContraseña(passwordService.hashPassword(contraseña));
+            }
             if (imagenesBase64 != null && !imagenesBase64.isEmpty()) {
                 String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
                 u.setFotoUrl(fotoUrl);
             }
             usuarioRepository.save(u);
 
-            sendResponse(fromEmail, "Éxito", "Secretaria " + nombres + " actualizada correctamente.");
+            sendResponse(fromEmail, "Éxito", "Secretaria " + s.getNombres() + " actualizada correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo actualizar secretaria: " + e.getMessage());
         }

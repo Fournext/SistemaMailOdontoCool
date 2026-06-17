@@ -278,14 +278,30 @@ public class PacienteService {
                 sendResponse(fromEmail, "Error", "Paciente no encontrado.");
                 return;
             }
-            pac.setNombres(nombres);
-            pac.setApellidos(apellidos);
-            pac.setDireccion(direccion);
-            pac.setGenero(genero);
-            pac.setTelefono(telefono);
-            pac.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
-            pac.setNombreContactoEmergencia(contactoEmergencia);
-            pac.setTelefonoEmergencia(telefonoEmergencia);
+            if (nombres != null && !nombres.trim().isEmpty()) {
+                pac.setNombres(nombres);
+            }
+            if (apellidos != null && !apellidos.trim().isEmpty()) {
+                pac.setApellidos(apellidos);
+            }
+            if (direccion != null && !direccion.trim().isEmpty()) {
+                pac.setDireccion(direccion);
+            }
+            if (genero != null && !genero.trim().isEmpty()) {
+                pac.setGenero(genero);
+            }
+            if (telefono != null && !telefono.trim().isEmpty()) {
+                pac.setTelefono(telefono);
+            }
+            if (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty()) {
+                pac.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
+            }
+            if (contactoEmergencia != null && !contactoEmergencia.trim().isEmpty()) {
+                pac.setNombreContactoEmergencia(contactoEmergencia);
+            }
+            if (telefonoEmergencia != null && !telefonoEmergencia.trim().isEmpty()) {
+                pac.setTelefonoEmergencia(telefonoEmergencia);
+            }
             pacienteRepository.save(pac);
 
             Usuario u = usuarioRepository.findByPersona_Ci(ci).orElse(null);
@@ -293,15 +309,19 @@ public class PacienteService {
                 sendResponse(fromEmail, "Error", "Usuario no encontrado.");
                 return;
             }
-            u.setCorreoElectronico(correoElectronico);
-            u.setContraseña(passwordService.hashPassword(contraseña));
+            if (correoElectronico != null && !correoElectronico.trim().isEmpty()) {
+                u.setCorreoElectronico(correoElectronico);
+            }
+            if (contraseña != null && !contraseña.trim().isEmpty()) {
+                u.setContraseña(passwordService.hashPassword(contraseña));
+            }
             if (imagenesBase64 != null && !imagenesBase64.isEmpty()) {
                 String fotoUrl = cloudinaryServices.subirImagen(imagenesBase64.get(0));
                 u.setFotoUrl(fotoUrl);
             }
             usuarioRepository.save(u);
 
-            sendResponse(fromEmail, "Éxito", "Paciente " + nombres + " actualizado correctamente.");
+            sendResponse(fromEmail, "Éxito", "Paciente " + pac.getNombres() + " actualizado correctamente.");
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo actualizar paciente: " + e.getMessage());
         }
