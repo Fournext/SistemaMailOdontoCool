@@ -34,15 +34,22 @@ public class SolicitudAnalisis {
     @JoinColumn(name = "analisis_id", nullable = false)
     private Analisis analisis;
 
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "tratamiento_id", nullable = true)
+    private Tratamiento tratamiento;
+
     @OneToOne(mappedBy = "solicitudAnalisis")
     private ResultadoAnalisis resultadoAnalisis;
 
     public SolicitudAnalisis() {
     }
 
-    public SolicitudAnalisis(LocalDate fechaSolicitud, String motivo) {
+    public SolicitudAnalisis(LocalDate fechaSolicitud, String motivo , String estado, Analisis analisis, Tratamiento tratamiento) {
         this.fechaSolicitud = fechaSolicitud;
         this.motivo = motivo;
+        this.estado = estado;
+        this.analisis = analisis;
+        this.tratamiento = tratamiento;
     }
 
     // Getters y Setters
@@ -92,6 +99,14 @@ public class SolicitudAnalisis {
 
     public void setResultadoAnalisis(ResultadoAnalisis resultadoAnalisis) {
         this.resultadoAnalisis = resultadoAnalisis;
+    }
+
+    public Tratamiento getTratamiento() {
+        return tratamiento;
+    }
+
+    public void setTratamiento(Tratamiento tratamiento) {
+        this.tratamiento = tratamiento;
     }
 
 }

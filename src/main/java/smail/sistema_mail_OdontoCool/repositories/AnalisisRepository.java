@@ -9,4 +9,6 @@ import smail.sistema_mail_OdontoCool.entities.Analisis;
 public interface AnalisisRepository extends JpaRepository<Analisis, Long> {
 
     boolean existsByNombreIgnoreCase(String nombre);
+
+    public boolean existsByNombre(String nombre);
 }

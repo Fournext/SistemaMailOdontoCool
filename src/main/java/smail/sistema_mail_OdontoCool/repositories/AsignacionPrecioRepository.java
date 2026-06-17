@@ -1,5 +1,6 @@
 package smail.sistema_mail_OdontoCool.repositories;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,6 @@ public interface AsignacionPrecioRepository extends JpaRepository<AsignacionPrec
             Long servicioId,
             String estado
     );
+
+     List<AsignacionPrecio> findByServicioIdAndEstado(Long servicioId, String estado);
 }

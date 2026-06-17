@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -50,6 +51,13 @@ public class Tratamiento {
 
     @OneToMany(mappedBy = "tratamiento")
     private Set<RecetaRecomendacion> recetasRecomendaciones = new HashSet<>();
+
+    @OneToMany(mappedBy = "tratamiento")
+    private Set<SolicitudAnalisis> solicitudesAnalisis = new HashSet<>();
+
+    @OneToOne(optional = true)
+    @JoinColumn(name = "diagnostico_id", nullable = false, unique = true)
+    private Diagnostico diagnostico;
 
     public Tratamiento() {
     }
@@ -91,6 +99,14 @@ public class Tratamiento {
 
     public LocalDate getFechaFinReal() {
         return fechaFinReal;
+    }
+
+    public Set<SolicitudAnalisis> getSolicitudesAnalisis() {
+        return solicitudesAnalisis;
+    }
+
+    public void setSolicitudesAnalisis(Set<SolicitudAnalisis> solicitudesAnalisis) {
+        this.solicitudesAnalisis = solicitudesAnalisis;
     }
 
     public void setObjetivoTratamiento(String objetivoTratamiento) {
@@ -140,6 +156,14 @@ public class Tratamiento {
 
     public void setRecetasRecomendaciones(Set<RecetaRecomendacion> recetasRecomendaciones) {
         this.recetasRecomendaciones = recetasRecomendaciones;
+    }
+
+    public Diagnostico getDiagnostico() {
+        return diagnostico;
+    }
+
+    public void setDiagnostico(Diagnostico diagnostico) {
+        this.diagnostico = diagnostico;
     }
 
 }

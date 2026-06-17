@@ -2,11 +2,13 @@ package smail.sistema_mail_OdontoCool.services;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import smail.sistema_mail_OdontoCool.entities.DetalleRecomendacion;
 import smail.sistema_mail_OdontoCool.entities.RecetaRecomendacion;
 import smail.sistema_mail_OdontoCool.entities.Tratamiento;
 import smail.sistema_mail_OdontoCool.repositories.RecetaRecomendacionRepository;
@@ -45,16 +47,23 @@ public class RecetaRecomendacionService {
 
     private void insert(List<String> params, String fromEmail) {
         try {
-            // fechaEmision[0], observaciones[1], tratamientoId[2]
+            /*
+             * Formato:
+             * INSREC["FechaEmision", "Observaciones", "ID Tratamiento", "Descripcion;Dosis;Duracion;Frecuencia | Descripcion;Dosis;Duracion;Frecuencia"]
+             */
 
-            if (params.size() < 3) {
-                sendResponse(fromEmail, "Error", "Parámetros insuficientes para insertar una receta/recomendación.");
+            if (params.size() < 4) {
+                sendResponse(fromEmail, "Error",
+                        "Parámetros insuficientes.\n"
+                        + "Formato correcto:\n"
+                        + "INSREC[\"FechaEmision\", \"Observaciones\", \"ID Tratamiento\", \"Descripcion;Dosis;Duracion;Frecuencia | Descripcion;Dosis;Duracion;Frecuencia\"]");
                 return;
             }
 
             String fechaTexto = params.get(0).trim();
             String observaciones = params.get(1).trim();
             String tratamientoIdTexto = params.get(2).trim();
+            String detallesRaw = params.get(3).trim();
 
             if (fechaTexto.isEmpty()) {
                 sendResponse(fromEmail, "Error", "La fecha de emisión es obligatoria.");
@@ -63,6 +72,11 @@ public class RecetaRecomendacionService {
 
             if (tratamientoIdTexto.isEmpty()) {
                 sendResponse(fromEmail, "Error", "El ID del tratamiento es obligatorio.");
+                return;
+            }
+
+            if (detallesRaw.isEmpty()) {
+                sendResponse(fromEmail, "Error", "Debe enviar al menos un detalle de recomendación.");
                 return;
             }
 
@@ -76,37 +90,116 @@ public class RecetaRecomendacionService {
             receta.setObservaciones(observaciones);
             receta.setTratamiento(tratamiento);
 
+            cargarDetallesDesdeTexto(receta, detallesRaw);
+
+            if (receta.getDetallesRecomendacion().isEmpty()) {
+                sendResponse(fromEmail, "Error", "Debe registrar al menos un detalle válido.");
+                return;
+            }
+
             recetaRecomendacionRepository.save(receta);
 
             sendResponse(fromEmail, "Éxito",
-                    "Receta/Recomendación registrada correctamente con ID: " + receta.getId());
+                    "Receta/Recomendación registrada correctamente.\n"
+                    + "ID Receta/Recomendación: " + receta.getId() + "\n"
+                    + "Detalles registrados: " + receta.getDetallesRecomendacion().size());
 
         } catch (NumberFormatException e) {
             sendResponse(fromEmail, "Error", "El ID del tratamiento debe ser numérico.");
+        } catch (DateTimeParseException e) {
+            sendResponse(fromEmail, "Error", "La fecha debe tener el formato AAAA-MM-DD. Ejemplo: 2026-06-15");
+        } catch (IllegalArgumentException e) {
+            sendResponse(fromEmail, "Error", e.getMessage());
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "No se pudo registrar la receta/recomendación: " + e.getMessage());
         }
     }
 
+    private void cargarDetallesDesdeTexto(RecetaRecomendacion receta, String detallesRaw) {
+        String[] detalles = detallesRaw.split("\\|");
+
+        for (int i = 0; i < detalles.length; i++) {
+            String detalleTexto = detalles[i].trim();
+
+            if (detalleTexto.isEmpty()) {
+                continue;
+            }
+
+            String[] partes = detalleTexto.split(";", -1);
+
+            if (partes.length < 4) {
+                throw new IllegalArgumentException(
+                        "El detalle N° " + (i + 1) + " está incompleto.\n"
+                        + "Formato correcto del detalle:\n"
+                        + "Descripcion;Dosis;Duracion;Frecuencia");
+            }
+
+            String descripcion = partes[0].trim();
+            String dosis = partes[1].trim();
+            String duracion = partes[2].trim();
+            String frecuencia = partes[3].trim();
+
+            if (descripcion.isEmpty()) {
+                throw new IllegalArgumentException("La descripción del detalle N° " + (i + 1) + " es obligatoria.");
+            }
+
+            DetalleRecomendacion detalle = new DetalleRecomendacion();
+            detalle.setDescripcion(descripcion);
+            detalle.setDosis(dosis);
+            detalle.setDuracion(duracion);
+            detalle.setFrecuencia(frecuencia);
+
+            receta.addDetalleRecomendacion(detalle);
+        }
+    }
+
     private void list(List<String> params, String fromEmail) {
         try {
-            StringBuilder sb = new StringBuilder();
-            if (params.size() == 0) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+            if (params == null || params.isEmpty()) {
+                sendResponse(fromEmail, "Error", "Use LISREC[*] o LISREC[\"Tratamiento:ID\"]");
                 return;
             }
-            if (params.size() == 1) {
-                switch (params.get(0)) {
-                    case "*":
-                        sb = listAll();
-                        break;
-                    default:
-                        sendResponse(fromEmail, "Error", "Listado no permitido para Recetas.");
-                }
+
+            String parametro = params.get(0).trim();
+
+            if (parametro.equals("*")) {
+                sendResponse(fromEmail, "Listado de Recetas/Recomendaciones", listAll().toString());
+                return;
             }
-            sendResponse(fromEmail, "Listado de Recetas", sb.toString());
+
+            if (parametro.startsWith("Tratamiento:")) {
+                String idTexto = parametro.substring("Tratamiento:".length()).trim();
+
+                if (idTexto.isEmpty()) {
+                    sendResponse(fromEmail, "Error", "Debe indicar el ID del tratamiento.");
+                    return;
+                }
+
+                sendResponse(fromEmail, "Listado de Recetas/Recomendaciones", listByTratamiento(idTexto).toString());
+                return;
+            }
+
+            sendResponse(fromEmail, "Error", "Listado no permitido. Use LISREC[*] o LISREC[\"Tratamiento:ID\"]");
+
         } catch (Exception e) {
-            sendResponse(fromEmail, "Error", "Error al listar recetas: " + e.getMessage());
+            sendResponse(fromEmail, "Error", "Error al listar recetas/recomendaciones: " + e.getMessage());
+        }
+    }
+
+    private StringBuilder listByTratamiento(String tratamientoIdTexto) {
+        try {
+            Long tratamientoId = Long.parseLong(tratamientoIdTexto);
+
+            List<RecetaRecomendacion> recetas
+                    = recetaRecomendacionRepository.listarPorTratamientoConDetalles(tratamientoId);
+
+            return construirListado(
+                    recetas,
+                    "Listado de Recetas/Recomendaciones del Tratamiento ID: " + tratamientoId
+            );
+
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("El ID del tratamiento debe ser numérico.");
         }
     }
 
@@ -175,19 +268,53 @@ public class RecetaRecomendacionService {
     }
 
     private StringBuilder listAll() {
-        List<RecetaRecomendacion> recetaRecomendaciones = recetaRecomendacionRepository.findAll();
-        StringBuilder sb = new StringBuilder();
-        sb.append("listado de Recetas\n");
-        for (RecetaRecomendacion receta : recetaRecomendaciones) {
-            sb.append(String.format("- [%s] fechaEmision: %s Observación: %s\n tratamiento: %s Observacion: %s\n",
-                    receta.getId(),
-                    receta.getFechaEmision(),
-                    receta.getObservaciones(),
-                    receta.getTratamiento() != null ? receta.getTratamiento().getObjetivoTratamiento() : "N/A",
-                    receta.getTratamiento() != null ? receta.getTratamiento().getObservacion() : "N/A"
-            ));
-        }
-        return sb;
+        List<RecetaRecomendacion> recetas = recetaRecomendacionRepository.listarTodoConDetalles();
+        return construirListado(recetas, "Listado de todas las Recetas/Recomendaciones");
+    }
 
+    private StringBuilder construirListado(List<RecetaRecomendacion> recetas, String titulo) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(titulo).append("\n\n");
+
+        if (recetas == null || recetas.isEmpty()) {
+            sb.append("No existen recetas/recomendaciones registradas.\n");
+            return sb;
+        }
+
+        for (RecetaRecomendacion receta : recetas) {
+            sb.append("--------------------------------------------------\n");
+            sb.append("ID Receta/Recomendación: ").append(receta.getId()).append("\n");
+            sb.append("Fecha de emisión: ").append(receta.getFechaEmision()).append("\n");
+            sb.append("Observaciones: ")
+                    .append(receta.getObservaciones() != null ? receta.getObservaciones() : "N/A")
+                    .append("\n");
+
+            sb.append("Recomendaciones:\n");
+
+            if (receta.getDetallesRecomendacion() == null || receta.getDetallesRecomendacion().isEmpty()) {
+                sb.append("  Sin recomendaciones registradas.\n");
+            } else {
+                int i = 1;
+                for (DetalleRecomendacion detalle : receta.getDetallesRecomendacion()) {
+                    sb.append("  ").append(i).append(") ")
+                            .append(detalle.getDescripcion() != null ? detalle.getDescripcion() : "N/A")
+                            .append("\n");
+                    sb.append("     Dosis: ")
+                            .append(detalle.getDosis() != null ? detalle.getDosis() : "N/A")
+                            .append("\n");
+                    sb.append("     Duración: ")
+                            .append(detalle.getDuracion() != null ? detalle.getDuracion() : "N/A")
+                            .append("\n");
+                    sb.append("     Frecuencia: ")
+                            .append(detalle.getFrecuencia() != null ? detalle.getFrecuencia() : "N/A")
+                            .append("\n");
+                    i++;
+                }
+            }
+
+            sb.append("\n");
+        }
+
+        return sb;
     }
 }

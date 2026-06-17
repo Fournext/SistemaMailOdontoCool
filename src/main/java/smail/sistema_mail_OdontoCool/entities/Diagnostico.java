@@ -3,6 +3,7 @@ package smail.sistema_mail_OdontoCool.entities;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -38,7 +39,7 @@ public class Diagnostico {
     @JoinColumn(name = "cita_id", nullable = false)
     private Cita cita;
 
-    @OneToMany(mappedBy = "diagnostico")
+    @OneToMany(mappedBy = "diagnostico", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<DetalleDiagnostico> detallesDiagnostico = new HashSet<>();
 
     public Diagnostico() {

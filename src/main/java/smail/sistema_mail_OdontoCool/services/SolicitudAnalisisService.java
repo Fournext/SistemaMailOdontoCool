@@ -9,9 +9,14 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import smail.sistema_mail_OdontoCool.entities.Analisis;
+import smail.sistema_mail_OdontoCool.entities.ResultadoAnalisis;
 import smail.sistema_mail_OdontoCool.entities.SolicitudAnalisis;
+import smail.sistema_mail_OdontoCool.entities.Tratamiento;
 import smail.sistema_mail_OdontoCool.repositories.AnalisisRepository;
+import smail.sistema_mail_OdontoCool.repositories.ResultadoAnalisisRepository;
 import smail.sistema_mail_OdontoCool.repositories.SolicitudAnalisisRepository;
+import smail.sistema_mail_OdontoCool.repositories.TratamientoRepository;
+import smail.sistema_mail_OdontoCool.validations.SolicitudAnalisisVal;
 
 @Service
 public class SolicitudAnalisisService {
@@ -25,6 +30,15 @@ public class SolicitudAnalisisService {
     @Autowired
     private AnalisisRepository analisisRepository;
 
+    @Autowired
+    private TratamientoRepository tratamientoRepository;
+
+    @Autowired
+    private ResultadoAnalisisRepository resultadoAnalisisRepository;
+
+    @Autowired
+    private SolicitudAnalisisVal solicitudAnalisisVal;
+
     public void handle(String action, List<String> params, String fromEmail) {
         switch (action) {
             case "INS":
@@ -35,6 +49,9 @@ public class SolicitudAnalisisService {
                 break;
             case "MOD":
                 update(params, fromEmail);
+                break;
+            case "AGR":
+                agregarResultado(params, fromEmail);
                 break;
             case "DEL":
                 delete(params, fromEmail);
@@ -47,10 +64,9 @@ public class SolicitudAnalisisService {
     @Transactional
     private void insert(List<String> params, String fromEmail) {
         try {
-            // fechaSolicitud[0], motivo[1], estado[2], analisisId[3]
-
-            if (params.size() < 4) {
-                sendResponse(fromEmail, "Error", "Parámetros insuficientes para insertar una solicitud de análisis.");
+            String validationMsg = solicitudAnalisisVal.insertValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error en la Validación", validationMsg);
                 return;
             }
 
@@ -58,29 +74,10 @@ public class SolicitudAnalisisService {
             String motivo = params.get(1).trim();
             String estado = params.get(2).trim();
             String analisisIdTexto = params.get(3).trim();
-
-            if (fechaTexto.isEmpty()) {
-                sendResponse(fromEmail, "Error", "La fecha de solicitud es obligatoria.");
-                return;
-            }
-
-            if (motivo.isEmpty()) {
-                sendResponse(fromEmail, "Error", "El motivo de la solicitud es obligatorio.");
-                return;
-            }
+            String tratamientoIdTexto = params.size() > 4 ? params.get(4).trim() : "";
 
             if (estado.isEmpty()) {
                 estado = "ACTIVO";
-            }
-
-            if (!estado.equalsIgnoreCase("ACTIVO") && !estado.equalsIgnoreCase("INACTIVO")) {
-                sendResponse(fromEmail, "Error", "Estado inválido. Use ACTIVO o INACTIVO.");
-                return;
-            }
-
-            if (analisisIdTexto.isEmpty()) {
-                sendResponse(fromEmail, "Error", "El ID del análisis es obligatorio.");
-                return;
             }
 
             Long analisisId = Long.parseLong(analisisIdTexto);
@@ -88,40 +85,54 @@ public class SolicitudAnalisisService {
             Analisis analisis = analisisRepository.findById(analisisId)
                     .orElseThrow(() -> new RuntimeException("Análisis no encontrado con ID: " + analisisId));
 
+            Tratamiento tratamiento = null;
+
+            if (!tratamientoIdTexto.isEmpty()) {
+                Long tratamientoId = Long.parseLong(tratamientoIdTexto);
+                tratamiento = tratamientoRepository.findById(tratamientoId)
+                        .orElseThrow(() -> new RuntimeException("Tratamiento no encontrado con ID: " + tratamientoId));
+            }
+
             SolicitudAnalisis solicitud = new SolicitudAnalisis();
-            solicitud.setFechaSolicitud(LocalDate.parse(fechaTexto));
+            solicitud.setFechaSolicitud(LocalDate.parse(fechaTexto.replace('/', '-')));
             solicitud.setMotivo(motivo);
             solicitud.setEstado(estado.toUpperCase());
             solicitud.setAnalisis(analisis);
+            solicitud.setTratamiento(tratamiento);
 
             solicitudAnalisisRepository.save(solicitud);
 
-            sendResponse(fromEmail, "Éxito", "Solicitud de análisis registrada correctamente con ID: " + solicitud.getId());
+            sendResponse(fromEmail, "Éxito",
+                    "Solicitud de análisis registrada correctamente con ID: " + solicitud.getId());
 
-        } catch (NumberFormatException e) {
-            sendResponse(fromEmail, "Error", "El ID del análisis debe ser numérico.");
         } catch (Exception e) {
-            sendResponse(fromEmail, "Error", "No se pudo registrar la solicitud de análisis: " + e.getMessage());
+            sendResponse(fromEmail, "Error",
+                    "No se pudo registrar la solicitud de análisis: " + e.getMessage());
         }
     }
 
     private void list(List<String> params, String fromEmail) {
         try {
-            StringBuilder sb = new StringBuilder();
-            if (params.size() == 0) {
-                sendResponse(fromEmail, "Error", "Falta especificar tipo de listado. Verifique el formato de comandos en la ayuda (HELP).");
+            String validationMsg = solicitudAnalisisVal.listValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error en la Validación", validationMsg);
                 return;
             }
-            if (params.size() == 1) {
-                switch (params.get(0)) {
-                    case "*":
-                        sb = listAll();
-                        break;
-                    default:
-                        sendResponse(fromEmail, "Error", "Listado no permitido para análisis.");
-                }
+
+            String parametro = params.get(0).trim();
+            StringBuilder sb;
+
+            if ("*".equals(parametro)) {
+                sb = listAll();
+            } else {
+                Long tratamientoId = Long.parseLong(
+                        parametro.substring("Tratamiento:".length()).trim()
+                );
+                sb = findByTratamientoId(tratamientoId);
             }
-            sendResponse(fromEmail, "Listado de Análisis", sb.toString());
+
+            sendResponse(fromEmail, "Listado de Solicitudes de Análisis", sb.toString());
+
         } catch (Exception e) {
             sendResponse(fromEmail, "Error", "Error al listar análisis: " + e.getMessage());
         }
@@ -130,15 +141,9 @@ public class SolicitudAnalisisService {
     @Transactional
     private void update(List<String> params, String fromEmail) {
         try {
-            // id[0], fechaSolicitud[1], motivo[2], estado[3], analisisId[4]
-
-            if (params.size() < 5) {
-                sendResponse(fromEmail, "Error", "Faltan parámetros para actualizar una solicitud de análisis.");
-                return;
-            }
-
-            if (params.get(0).trim().isEmpty()) {
-                sendResponse(fromEmail, "Error", "El ID de la solicitud de análisis es obligatorio.");
+            String validationMsg = solicitudAnalisisVal.updateValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error en la Validación", validationMsg);
                 return;
             }
 
@@ -151,9 +156,10 @@ public class SolicitudAnalisisService {
             String motivo = params.get(2).trim();
             String estado = params.get(3).trim();
             String analisisIdTexto = params.get(4).trim();
+            String tratamientoIdTexto = params.get(5).trim();
 
             if (!fechaTexto.isEmpty()) {
-                solicitud.setFechaSolicitud(LocalDate.parse(fechaTexto));
+                solicitud.setFechaSolicitud(LocalDate.parse(fechaTexto.replace('/', '-')));
             }
 
             if (!motivo.isEmpty()) {
@@ -161,21 +167,21 @@ public class SolicitudAnalisisService {
             }
 
             if (!estado.isEmpty()) {
-                if (!estado.equalsIgnoreCase("ACTIVO") && !estado.equalsIgnoreCase("INACTIVO")) {
-                    sendResponse(fromEmail, "Error", "Estado inválido. Use ACTIVO o INACTIVO.");
-                    return;
-                }
-
                 solicitud.setEstado(estado.toUpperCase());
             }
 
             if (!analisisIdTexto.isEmpty()) {
                 Long analisisId = Long.parseLong(analisisIdTexto);
-
                 Analisis analisis = analisisRepository.findById(analisisId)
                         .orElseThrow(() -> new RuntimeException("Análisis no encontrado con ID: " + analisisId));
-
                 solicitud.setAnalisis(analisis);
+            }
+
+            if (!tratamientoIdTexto.isEmpty()) {
+                Long tratamientoId = Long.parseLong(tratamientoIdTexto);
+                Tratamiento tratamiento = tratamientoRepository.findById(tratamientoId)
+                        .orElseThrow(() -> new RuntimeException("Tratamiento no encontrado con ID: " + tratamientoId));
+                solicitud.setTratamiento(tratamiento);
             }
 
             solicitudAnalisisRepository.save(solicitud);
@@ -183,16 +189,149 @@ public class SolicitudAnalisisService {
             sendResponse(fromEmail, "Éxito",
                     "Solicitud de análisis con ID: " + solicitud.getId() + " actualizada correctamente.");
 
-        } catch (NumberFormatException e) {
-            sendResponse(fromEmail, "Error", "El ID de la solicitud y el ID del análisis deben ser numéricos.");
         } catch (Exception e) {
-            sendResponse(fromEmail, "Error", "Error al actualizar solicitud de análisis: " + e.getMessage());
+            sendResponse(fromEmail, "Error",
+                    "Error al actualizar solicitud de análisis: " + e.getMessage());
         }
     }
-// TODO: Implementar delete con eliminación lógica (cambiar estado a INACTIVO)
 
+    @Transactional
+    private void agregarResultado(List<String> params, String fromEmail) {
+        try {
+            String validationMsg = solicitudAnalisisVal.agregarResultadoValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error en la Validación", validationMsg);
+                return;
+            }
+
+            Long solicitudId = Long.parseLong(params.get(0).trim());
+            LocalDate fechaResultado = LocalDate.parse(params.get(1).trim().replace('/', '-'));
+            String resultado = params.get(2).trim();
+            String observaciones = params.get(3).trim();
+            String interpretacion = params.get(4).trim();
+            String estado = params.get(5).trim().toUpperCase();
+            String archivoAdjunto = params.get(6).trim();
+
+            SolicitudAnalisis solicitud = solicitudAnalisisRepository.findById(solicitudId)
+                    .orElseThrow(() -> new RuntimeException("Solicitud de análisis con ID: " + solicitudId + " no encontrada."));
+
+            ResultadoAnalisis resultadoAnalisis = new ResultadoAnalisis();
+            resultadoAnalisis.setFechaResultado(fechaResultado);
+            resultadoAnalisis.setResultado(resultado);
+            resultadoAnalisis.setObservaciones(observaciones);
+            resultadoAnalisis.setInterpretacion(interpretacion);
+            resultadoAnalisis.setEstado(estado);
+            resultadoAnalisis.setArchivoAdjunto(archivoAdjunto);
+            resultadoAnalisis.setSolicitudAnalisis(solicitud);
+
+            resultadoAnalisisRepository.save(resultadoAnalisis);
+
+            solicitud.setResultadoAnalisis(resultadoAnalisis);
+            solicitud.setEstado("FINALIZADO");
+            solicitudAnalisisRepository.save(solicitud);
+
+            sendResponse(fromEmail, "Éxito",
+                    "Resultado de análisis agregado correctamente a la solicitud con ID: " + solicitudId);
+
+        } catch (Exception e) {
+            sendResponse(fromEmail, "Error",
+                    "Error al agregar resultado de análisis: " + e.getMessage());
+        }
+    }
+
+    @Transactional
     private void delete(List<String> params, String fromEmail) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        try {
+            String validationMsg = solicitudAnalisisVal.deleteValid(params);
+            if (!validationMsg.isEmpty()) {
+                sendResponse(fromEmail, "Error en la Validación", validationMsg);
+                return;
+            }
+
+            Long id = Long.parseLong(params.get(0).trim());
+
+            SolicitudAnalisis solicitud = solicitudAnalisisRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Solicitud de análisis con ID: " + id + " no encontrada."));
+
+            solicitud.setEstado("INACTIVO");
+            solicitudAnalisisRepository.save(solicitud);
+
+            sendResponse(fromEmail, "Éxito",
+                    "Solicitud de análisis con ID: " + id + " desactivada correctamente.");
+
+        } catch (Exception e) {
+            sendResponse(fromEmail, "Error",
+                    "Error al eliminar solicitud de análisis: " + e.getMessage());
+        }
+    }
+
+    private StringBuilder listAll() {
+        List<SolicitudAnalisis> solicitudes = solicitudAnalisisRepository.findAll();
+
+        StringBuilder sb = new StringBuilder("Listado de Solicitudes de Análisis\n");
+
+        for (SolicitudAnalisis s : solicitudes) {
+            sb.append(formatearSolicitud(s));
+        }
+
+        return sb;
+    }
+
+    private StringBuilder findByTratamientoId(Long tratamientoId) {
+        List<SolicitudAnalisis> solicitudes = solicitudAnalisisRepository.findByTratamientoId(tratamientoId);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Solicitudes de Análisis para Tratamiento ID: ")
+                .append(tratamientoId)
+                .append("\n");
+
+        if (solicitudes.isEmpty()) {
+            sb.append("No se encontraron solicitudes de análisis para este tratamiento.\n");
+            return sb;
+        }
+
+        for (SolicitudAnalisis s : solicitudes) {
+            ResultadoAnalisis resultado = resultadoAnalisisRepository.findBySolicitudAnalisisId(s.getId());
+
+            if (resultado != null) {
+                s.setResultadoAnalisis(resultado);
+            }
+
+            sb.append(formatearSolicitud(s));
+        }
+
+        return sb;
+    }
+
+    private String formatearSolicitud(SolicitudAnalisis s) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(String.format(
+                "- [%s] Fecha: %s | Motivo: %s | Estado: %s | Análisis: %s | Tratamiento: %s\n",
+                s.getId(),
+                s.getFechaSolicitud(),
+                s.getMotivo(),
+                s.getEstado(),
+                s.getAnalisis() != null ? s.getAnalisis().getNombre() : "N/A",
+                s.getTratamiento() != null ? s.getTratamiento().getId() : "N/A"
+        ));
+
+        if (s.getResultadoAnalisis() != null) {
+            ResultadoAnalisis r = s.getResultadoAnalisis();
+
+            sb.append(String.format(
+                    "  Resultado ID: %s | Fecha: %s | Resultado: %s | Observaciones: %s | Interpretación: %s | Estado: %s | Archivo: %s\n",
+                    r.getId(),
+                    r.getFechaResultado(),
+                    r.getResultado(),
+                    r.getObservaciones(),
+                    r.getInterpretacion(),
+                    r.getEstado(),
+                    r.getArchivoAdjunto()
+            ));
+        }
+
+        return sb.toString();
     }
 
     private void sendResponse(String to, String subject, String body) {
@@ -202,20 +341,4 @@ public class SolicitudAnalisisService {
             System.err.println("Error SMTP: " + e.getMessage());
         }
     }
-
-    private StringBuilder listAll() {
-        List<SolicitudAnalisis> solicitudes = solicitudAnalisisRepository.findAll();
-        StringBuilder sb = new StringBuilder();
-        sb.append("listado de Solicitudes de Análisis\n");
-        for (SolicitudAnalisis s : solicitudes) {
-            sb.append(String.format("- [%s] Fecha: %s Motivo: %s Estado: %s Análisis: %s\n",
-                    s.getId(),
-                    s.getFechaSolicitud(),
-                    s.getMotivo(),
-                    s.getEstado(),
-                    s.getAnalisis() != null ? s.getAnalisis().getNombre() : "N/A"));
-        }
-        return sb;
-    }
-
 }
