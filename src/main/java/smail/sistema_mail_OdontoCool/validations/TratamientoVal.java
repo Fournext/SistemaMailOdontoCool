@@ -33,31 +33,34 @@ public class TratamientoVal {
         validarEstado(params.get(2), msg);
         validarFecha(params.get(3), "fecha de inicio", true, msg);
         validarFecha(params.get(4), "fecha fin", true, msg);
-        validarFecha(params.get(5), "fecha fin real", true, msg);
+        validarFecha(params.get(5), "fecha fin real", false, msg);
         validarRangoFechas(params.get(3), params.get(4), params.get(5), msg);
         validarHistorial(params.get(6), true, msg);
         validarDiagnostico(params.get(7), true, msg);
-
 
         return msg.toString();
     }
 
     private void validarDiagnostico(String string, boolean b, StringBuilder msg) {
-            if (string == null || string.trim().isEmpty()) {
-                if (b) {
-                    msg.append("El código del diagnóstico es obligatorio.\n");
-                }
-                return;
+        if (string == null || string.trim().isEmpty()) {
+            if (b) {
+                msg.append("El código del diagnóstico es obligatorio.\n");
             }
-    
-            try {
-                Long id = Long.parseLong(string.trim());
-                if (!diagnosticoRepository.existsById(id)) {
-                    msg.append("No existe diagnóstico con ID: ").append(id).append(".\n");
-                }
-            } catch (NumberFormatException e) {
-                msg.append("El ID del diagnóstico debe ser numérico.\n");
+            return;
+        }
+        //vamos a verificar si el diagnostico ya existe, para eso necesitamos el id del diagnostico, entonces vamos a intentar parsear el string a long, si no se puede parsear, entonces el id es inválido, si se puede parsear, entonces verificamos si el diagnostico existe en la base de datos
+
+        try {
+            Long id = Long.parseLong(string.trim());
+            if (tratamientoRepository.existsByDiagnosticoId(id)) {
+                msg.append("El diagnóstico con ID: ").append(id).append(" ya está asociado a otro tratamiento.\n");
             }
+            if (!diagnosticoRepository.existsById(id)) {
+                msg.append("No existe diagnóstico con ID: ").append(id).append(".\n");
+            }
+        } catch (NumberFormatException e) {
+            msg.append("El ID del diagnóstico debe ser numérico.\n");
+        }
     }
 
     public String updateValid(List<String> params) {
