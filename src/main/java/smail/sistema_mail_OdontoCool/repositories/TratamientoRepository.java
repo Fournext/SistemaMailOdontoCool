@@ -12,4 +12,6 @@ public interface TratamientoRepository extends JpaRepository<Tratamiento, Long> 
     //vamos a listar los tratamientos por historial clinico, entonces necesitamos un metodo que busque por el id del historial clinico
     List<Tratamiento> findByHistorialClinicoCodigoHistorial(String codigoHistorial);
 
+    public boolean existsByDiagnosticoId(long parseLong);
+
 }

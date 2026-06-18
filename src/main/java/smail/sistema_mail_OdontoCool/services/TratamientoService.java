@@ -115,7 +115,9 @@ public class TratamientoService {
             tratamiento.setEstado(params.get(2).trim().toUpperCase());
             tratamiento.setFechaInicio(LocalDate.parse(params.get(3).trim().replace('/', '-')));
             tratamiento.setFechaFin(LocalDate.parse(params.get(4).trim().replace('/', '-')));
-            tratamiento.setFechaFinReal(LocalDate.parse(params.get(5).trim().replace('/', '-')));
+            if (!params.get(5).trim().isEmpty()) {
+                tratamiento.setFechaFinReal(LocalDate.parse(params.get(5).trim().replace('/', '-')));
+            }
             tratamiento.setHistorialClinico(historialClinico);
             tratamiento.setDiagnostico(diagnostico);
 
