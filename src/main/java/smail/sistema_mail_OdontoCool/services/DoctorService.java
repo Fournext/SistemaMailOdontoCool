@@ -247,6 +247,16 @@ public class DoctorService {
                             }
                         }
                     }
+                    StringBuilder espSb = new StringBuilder();
+                    if (d.getEspecialidades() != null && !d.getEspecialidades().isEmpty()) {
+                        for (Especialidad esp : d.getEspecialidades()) {
+                            if (espSb.length() > 0) espSb.append(", ");
+                            espSb.append(esp.getNombre());
+                        }
+                    } else {
+                        espSb.append("Ninguna");
+                    }
+
                     sb.append("- Doctor:\n")
                             .append("  * CI: ").append(d.getCi()).append("\n")
                             .append("  * Nombre: Dr. ").append(d.getNombres()).append(" ").append(d.getApellidos())
@@ -260,6 +270,12 @@ public class DoctorService {
                             .append("  * Fecha Nacimiento: ")
                             .append(d.getFechaNacimiento() != null ? d.getFechaNacimiento() : "No especificada")
                             .append("\n")
+                            .append("  * Experiencia: ")
+                            .append(d.getTiempoExperiencia() != null ? d.getTiempoExperiencia() : "No especificada")
+                            .append("\n")
+                            .append("  * Fecha Contratación: ")
+                            .append(d.getFechaContratacion() != null ? d.getFechaContratacion().toString() : "No especificada")
+                            .append("\n")
                             .append("  * Matrícula: ")
                             .append(d.getMatriculaProfesional() != null ? d.getMatriculaProfesional()
                                     : "No especificada")
@@ -267,6 +283,7 @@ public class DoctorService {
                             .append("  * Teléfono Prof.: ")
                             .append(d.getTelefonoProfesional() != null ? d.getTelefonoProfesional() : "No especificado")
                             .append("\n")
+                            .append("  * Especialidades: ").append(espSb.toString()).append("\n")
                             .append("  * Usuario: ").append(codigo).append("\n")
                             .append("  * Email: ").append(email).append("\n")
                             .append("  * Foto: ").append(foto).append("\n\n");
@@ -346,6 +363,9 @@ public class DoctorService {
             }
             if (telefonoProfesional != null && !telefonoProfesional.trim().isEmpty()) {
                 d.setTelefonoProfesional(telefonoProfesional);
+            }
+            if (d.getPersona() != null) {
+                personaRepository.save(d.getPersona());
             }
             doctorRepository.save(d);
 

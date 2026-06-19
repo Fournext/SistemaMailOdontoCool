@@ -290,6 +290,9 @@ public class PropietarioService {
             if (porcentaje != null && !porcentaje.trim().isEmpty()) {
                 prop.setPorcentajeParticipacion(new BigDecimal(porcentaje));
             }
+            if (prop.getPersona() != null) {
+                personaRepository.save(prop.getPersona());
+            }
             propietarioRepository.save(prop);
 
             Usuario u = usuarioRepository.findByPersonaCiAndSuffix(ci, "PRP").orElse(null);

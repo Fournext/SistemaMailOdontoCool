@@ -251,7 +251,7 @@ public class ReporteEstadisticaService {
         // Líneas de cuadrícula
         g2.setColor(new Color(230, 230, 230));
         g2.setStroke(new BasicStroke(1));
-        int gridLines = 5;
+        int gridLines = (maxValue <= 10) ? (int) maxValue : 5;
         g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
         for (int i = 0; i <= gridLines; i++) {
             double val = (maxValue / gridLines) * i;

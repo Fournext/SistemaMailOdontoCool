@@ -215,6 +215,7 @@ public class PacienteService {
                             .append("  * Apellidos: ").append(p.getApellidos()).append("\n")
                             .append("  * Dirección: ")
                             .append(p.getDireccion() != null ? p.getDireccion() : "No especificada").append("\n")
+                            .append("  * Género: ").append(p.getGenero() != null ? p.getGenero() : "No especificado").append("\n")
                             .append("  * Teléfono: ")
                             .append(p.getTelefono() != null ? p.getTelefono() : "No especificado").append("\n")
                             .append("  * Fecha Nacimiento: ")
@@ -301,6 +302,9 @@ public class PacienteService {
             }
             if (telefonoEmergencia != null && !telefonoEmergencia.trim().isEmpty()) {
                 pac.setTelefonoEmergencia(telefonoEmergencia);
+            }
+            if (pac.getPersona() != null) {
+                personaRepository.save(pac.getPersona());
             }
             pacienteRepository.save(pac);
 

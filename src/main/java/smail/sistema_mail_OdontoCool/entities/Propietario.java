@@ -12,7 +12,7 @@ public class Propietario {
     @Column(name = "ci", nullable = false, length = 20)
     private String ci;
 
-    @OneToOne(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @OneToOne(fetch = FetchType.EAGER)
     @MapsId
     @JoinColumn(name = "ci")
     private Persona persona;

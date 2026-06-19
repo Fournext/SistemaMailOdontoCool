@@ -175,7 +175,6 @@ public class BoletaPagoService {
                             sendResponse(fromEmail, "Error", "El servicio prestado con ID " + spId + " no existe.");
                             return;
                         }
-                        sp.setBoletaPago(boletaPago);
                         serviciosPrestados.add(sp);
                         if (sp.getSubtotal() != null) {
                             totalDetalles += sp.getSubtotal().doubleValue();
@@ -187,7 +186,6 @@ public class BoletaPagoService {
                 }
             }
 
-            boletaPago.setServiciosPrestados(serviciosPrestados);
             boletaPago.setTotal(totalDetalles - descuento);
 
             Usuario user = usuarioRepository.findByPersonaCiAndSuffix(paciente.getCi(), "PAC").orElse(null);
@@ -196,10 +194,18 @@ public class BoletaPagoService {
                 return;
             }
 
-            boletaPagoRepository.save(boletaPago);
+            // Guardamos la boleta de pago primero para que obtenga su ID autogenerado
+            boletaPago = boletaPagoRepository.save(boletaPago);
+
+            // Asociamos cada servicio prestado con la boleta guardada y los actualizamos
             for (ServicioPrestado sp : serviciosPrestados) {
+                sp.setBoletaPago(boletaPago);
                 servicioPrestadoRepository.save(sp);
             }
+
+            // Asignamos la lista de servicios prestados a la boleta y guardamos la relación bidireccional
+            boletaPago.setServiciosPrestados(serviciosPrestados);
+            boletaPago = boletaPagoRepository.save(boletaPago);
 
             // ==============================================================================
             // CREAR MAS DE UNA CUOTA SI ES AL CREDITO Y SOLO CREAR 1 CUOTA SI ES AL CONTADO

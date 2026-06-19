@@ -41,11 +41,11 @@ public class ServicioVal {
         }
 
         //vamos a validar que el tipo sea string y no contenga números ni simbolos
-        if (!tipo.matches("^[a-zA-Z ]+$")) {
+        if (!tipo.matches("^[a-zA-ZÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg.append("El tipo solo debe contener letras y espacios.\n");
         }
 
-        if (!nombre.matches("^[a-zA-Z ]+$")) {
+        if (!nombre.matches("^[a-zA-ZÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg.append("El nombre solo debe contener letras y espacios.\n");
         }
 
@@ -85,11 +85,11 @@ public class ServicioVal {
         }
 
         // Validar que el nombre no contenga números ni símbolos
-        if (!nombre.isEmpty() && !nombre.matches("^[a-zA-Z ]+$")) {
+        if (!nombre.isEmpty() && !nombre.matches("^[a-zA-ZÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg.append("El nombre solo debe contener letras y espacios.\n");
         }
         // Validar que el tipo no contenga números ni símbolos
-        if (!tipo.isEmpty() && !tipo.matches("^[a-zA-Z ]+$")) {
+        if (!tipo.isEmpty() && !tipo.matches("^[a-zA-ZÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg.append("El tipo solo debe contener letras y espacios.\n");
         }   
 

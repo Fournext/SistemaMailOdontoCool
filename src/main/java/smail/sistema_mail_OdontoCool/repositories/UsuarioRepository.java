@@ -19,7 +19,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByPersona_Ci(String ci);
 
     @Query("SELECT u FROM Usuario u WHERE u.persona.ci = :ci AND u.codigoUsuario LIKE %:suffix")
-    Optional<Usuario> findByPersonaCiAndSuffix(@Param("ci") String ci, @Param("suffix") String suffix);
+    java.util.List<Usuario> findListByPersonaCiAndSuffix(@Param("ci") String ci, @Param("suffix") String suffix);
+
+    default Optional<Usuario> findByPersonaCiAndSuffix(String ci, String suffix) {
+        java.util.List<Usuario> list = findListByPersonaCiAndSuffix(ci, suffix);
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+    }
 
     @Query("SELECT COUNT(u) > 0 FROM Usuario u WHERE u.correoElectronico = :email AND LOWER(u.rol.nombre) = LOWER(:rolName)")
     boolean existsByCorreoElectronicoAndRolNombre(@Param("email") String email, @Param("rolName") String rolName);

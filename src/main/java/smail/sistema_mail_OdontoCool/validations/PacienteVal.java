@@ -41,15 +41,15 @@ public class PacienteVal {
             msg += "La CI debe ser numérica: " + "(" + CI + ").\n";
         }
 
-        if (!Nombres.matches("^[A-Za-z ]+$")) {
+        if (!Nombres.matches("^[A-Za-zÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg += "Los nombres deben ser solo letras: " + "(" + Nombres + ").\n";
         }
 
-        if (!Apellidos.matches("^[A-Za-z ]+$")) {
+        if (!Apellidos.matches("^[A-Za-zÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg += "Los apellidos deben ser solo letras: " + "(" + Apellidos + ").\n";
         }
 
-        if (!Dir.matches("^[A-Za-z0-9 ]+$")) {
+        if (!Dir.matches("^[A-Za-z0-9ÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg += "La dirección debe ser solo letras y números: " + "(" + Dir + ").\n";
         }
 
@@ -69,7 +69,7 @@ public class PacienteVal {
             msg += "La fecha de nacimiento debe ser en formato yyyy-MM-dd o yyyy/MM/dd: " + "(" + FNac + ").\n";
         }
 
-        if (!ContactoEmerg.matches("^[A-Za-z ]+$")) {
+        if (!ContactoEmerg.matches("^[A-Za-zÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg += "El contacto de emergencia debe ser solo letras: " + "(" + ContactoEmerg + ").\n";
         }
 
@@ -124,15 +124,15 @@ public class PacienteVal {
             msg += "La CI debe ser numérica: " + "(" + CI + ").\n";
         }
 
-        if (!Nombres.isEmpty() && !Nombres.matches("^[A-Za-z ]+$")) {
+        if (!Nombres.isEmpty() && !Nombres.matches("^[A-Za-zÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg += "Los nombres deben ser solo letras: " + "(" + Nombres + ").\n";
         }
 
-        if (!Apellidos.isEmpty() && !Apellidos.matches("^[A-Za-z ]+$")) {
+        if (!Apellidos.isEmpty() && !Apellidos.matches("^[A-Za-zÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg += "Los apellidos deben ser solo letras: " + "(" + Apellidos + ").\n";
         }
 
-        if (!Dir.isEmpty() && !Dir.matches("^[A-Za-z0-9 ]+$")) {
+        if (!Dir.isEmpty() && !Dir.matches("^[A-Za-z0-9ÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg += "La dirección debe ser solo letras y números: " + "(" + Dir + ").\n";
         }
 
@@ -152,7 +152,7 @@ public class PacienteVal {
             msg += "La fecha de nacimiento debe ser en formato yyyy-MM-dd o yyyy/MM/dd: " + "(" + FNac + ").\n";
         }
 
-        if (!ContactoEmerg.isEmpty() && !ContactoEmerg.matches("^[A-Za-z ]+$")) {
+        if (!ContactoEmerg.isEmpty() && !ContactoEmerg.matches("^[A-Za-zÑñáéíóúÁÉÍÓÚüÜ ]+$")) {
             msg += "El contacto de emergencia debe ser solo letras: " + "(" + ContactoEmerg + ").\n";
         }
 

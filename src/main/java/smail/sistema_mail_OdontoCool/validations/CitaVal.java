@@ -306,7 +306,15 @@ public class CitaVal {
                     (fechaCita.isEqual(asig.getFechaFin()) || fechaCita.isBefore(asig.getFechaFin()))) {
 
                 String diasAsignados = cleanString(asig.getDiaSemana());
-                if (diasAsignados.contains(dayOfWeekSp)) {
+                boolean diaValido = false;
+                String fullName = getFullDayName(dayOfWeekSp);
+                for (String dia : diasAsignados.split("[,\\s-]+")) {
+                    if (dia.equals(dayOfWeekSp) || dia.equals(fullName)) {
+                        diaValido = true;
+                        break;
+                    }
+                }
+                if (diaValido) {
                     if (asig.getTurno() != null) {
                         System.out.println("TURNOS " + asig.getTurno());
                         try {
@@ -362,6 +370,19 @@ public class CitaVal {
         }
 
         return "";
+    }
+
+    private String getFullDayName(String abbreviation) {
+        switch (abbreviation) {
+            case "lu": return "lunes";
+            case "ma": return "martes";
+            case "mi": return "miercoles";
+            case "ju": return "jueves";
+            case "vi": return "viernes";
+            case "sa": return "sabado";
+            case "do": return "domingo";
+            default: return "";
+        }
     }
 
     private LocalTime parseLocalTimeSafely(String timeStr) {

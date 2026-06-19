@@ -291,6 +291,9 @@ public class SecretariaService {
             if (fechaContratacion != null && !fechaContratacion.trim().isEmpty()) {
                 s.setFechaContratacion(LocalDate.parse(fechaContratacion));
             }
+            if (s.getPersona() != null) {
+                personaRepository.save(s.getPersona());
+            }
             secretariaRepository.save(s);
 
             Usuario u = usuarioRepository.findByPersonaCiAndSuffix(ci, "SEC").orElse(null);
