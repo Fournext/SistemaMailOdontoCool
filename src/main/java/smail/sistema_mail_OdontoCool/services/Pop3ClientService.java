@@ -47,12 +47,17 @@ public class Pop3ClientService {
     }
 
     private Socket createSocket() throws IOException {
+        Socket socket = new Socket();
+        socket.connect(new java.net.InetSocketAddress(host, port), 5000); // 5s timeout de conexión
+        socket.setSoTimeout(5000); // 5s timeout de lectura
+
         if (useSsl) {
             SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-            return factory.createSocket(host, port);
-        } else {
-            return new Socket(host, port);
+            javax.net.ssl.SSLSocket sslSocket = (javax.net.ssl.SSLSocket) factory.createSocket(socket, host, port, true);
+            sslSocket.startHandshake();
+            return sslSocket;
         }
+        return socket;
     }
 
     public List<EmailMessage> getEmails() throws IOException {
